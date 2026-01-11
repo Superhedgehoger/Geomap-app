@@ -1,0 +1,397 @@
+// ==== Table View Module (Tabulator.js) ==== //
+let featureTable = null;
+let isTableInitialized = false;
+
+// 初始化表格
+function initFeatureTable() {
+    if (isTableInitialized) return;
+
+    featureTable = new Tabulator("#featureTable", {
+        height: "100%",
+        layout: "fitDataStretch",
+        virtualDom: true,              // 启用虚拟滚动
+        virtualDomBuffer: 300,         // 缓冲行数
+        placeholder: "暂无数据，请先在地图上添加标记",
+        columns: getTableColumns(),
+        rowClick: onTableRowClick,
+        cellEdited: onCellEdited,
+        initialSort: [{ column: "_id", dir: "asc" }],
+        selectable: 1,                 // 启用单行选择
+    });
+
+    isTableInitialized = true;
+
+    // 注册 SelectionManager 监听器（从地图/图层面板选中时同步到表格）
+    if (typeof selectionManager !== 'undefined') {
+        selectionManager.onSelectionChange((event) => {
+            if (event.current && featureTable) {
+                selectTableRowByLayer(event.current);
+            }
+        });
+    }
+
+    console.log('Feature table initialized');
+}
+
+// 根据图层选中表格行并滚动到可见区域
+function selectTableRowByLayer(layer) {
+    if (!featureTable) return;
+
+    const layerId = L.stamp(layer);
+    const rows = featureTable.getRows();
+
+    for (const row of rows) {
+        const rowData = row.getData();
+        if (rowData._id === layerId || rowData._layer === layer) {
+            // 取消其他选择
+            featureTable.deselectRow();
+            // 选中该行
+            row.select();
+            // 滚动到该行
+            row.scrollTo();
+            console.log('Table row selected:', rowData.name);
+            break;
+        }
+    }
+}
+
+// 获取列定义
+function getTableColumns() {
+    return [
+        {
+            title: "ID",
+            field: "_id",
+            width: 80,
+            frozen: true,
+            headerFilter: "input",
+            headerFilterPlaceholder: "搜索ID",
+        },
+        {
+            title: "名称",
+            field: "name",
+            editor: "input",
+            headerFilter: "input",
+            headerFilterPlaceholder: "搜索名称",
+        },
+        {
+            title: "类型",
+            field: "type",
+            editor: "input",
+            headerFilter: "input",
+            headerFilterPlaceholder: "搜索类型",
+        },
+        {
+            title: "地址",
+            field: "address",
+            editor: "input",
+            minWidth: 200,
+        },
+        {
+            title: "经度",
+            field: "lng",
+            formatter: (cell) => cell.getValue() ? cell.getValue().toFixed(6) : '-',
+            sorter: "number",
+            width: 110,
+        },
+        {
+            title: "纬度",
+            field: "lat",
+            formatter: (cell) => cell.getValue() ? cell.getValue().toFixed(6) : '-',
+            sorter: "number",
+            width: 110,
+        },
+        {
+            title: "原始经度",
+            field: "_originalLng",
+            formatter: (cell) => {
+                const val = cell.getValue();
+                return val !== undefined ? val.toFixed(6) : '-';
+            },
+            width: 110,
+            visible: false,  // 默认隐藏
+        },
+        {
+            title: "原始纬度",
+            field: "_originalLat",
+            formatter: (cell) => {
+                const val = cell.getValue();
+                return val !== undefined ? val.toFixed(6) : '-';
+            },
+            width: 110,
+            visible: false,  // 默认隐藏
+        },
+        {
+            title: "偏移索引",
+            field: "_offsetIndex",
+            width: 90,
+            visible: false,  // 默认隐藏
+        },
+    ];
+}
+
+// 从地图提取数据（包括分组中的标记）
+function getTableData() {
+    const data = [];
+    const processedMarkers = new Set();
+
+    // Helper function to process a marker
+    const processMarker = (layer) => {
+        if (!(layer instanceof L.Marker) || layer._isGroupMarker) return;
+        if (processedMarkers.has(layer)) return;
+        processedMarkers.add(layer);
+
+        const props = layer.feature?.properties || {};
+        const latlng = layer.getLatLng();
+
+        const rowData = {
+            _id: L.stamp(layer),
+            _layer: layer,  // 保存图层引用
+            name: props.名称 || props.name || layer.options.name || '',
+            type: props.类型 || props.type || '',
+            address: props.地址 || props.address || '',
+            lat: latlng.lat,
+            lng: latlng.lng,
+            _originalLat: props._originalLat,
+            _originalLng: props._originalLng,
+            _offsetIndex: props._offsetIndex,
+        };
+
+        // 添加自定义属性
+        const customProps = getCustomProperties(props);
+        Object.assign(rowData, customProps);
+
+        data.push(rowData);
+    };
+
+    // 首先从 drawnItems 获取
+    if (typeof drawnItems !== 'undefined') {
+        drawnItems.eachLayer(processMarker);
+    }
+
+    // 然后从 MarkerGroupManager 获取分组中的标记
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            group.markers.forEach(processMarker);
+        });
+    }
+
+    return data;
+}
+
+// 提取自定义属性（排除内部技术字段）
+function getCustomProperties(props) {
+    // 判断是否为内部技术字段
+    const isInternalField = (key) => {
+        return key.startsWith('_') ||        // _originalLat, _originalLng, _offsetIndex
+            key.startsWith('marker-') ||   // marker-color, marker-symbol, marker-size
+            key === 'events';              // events 字段
+    };
+
+    // 已在表格基础列中显示的字段
+    const basicDisplayedFields = ['name', 'type', 'address', 'lat', 'lng'];
+
+    const custom = {};
+
+    for (const [key, value] of Object.entries(props)) {
+        // 只过滤内部字段和已显示的基础字段
+        if (!isInternalField(key) && !basicDisplayedFields.includes(key)) {
+            custom[key] = value;
+        }
+    }
+
+    return custom;
+}
+
+// 更新表格数据与列结构
+function updateFeatureTable() {
+    if (!featureTable) {
+        console.warn('Table not initialized');
+        return;
+    }
+
+    const data = getTableData();
+
+    // 动态提取所有唯一的自定义属性键
+    const allKeys = new Set();
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (!key.startsWith('_') &&
+                !['name', 'type', 'address', 'lat', 'lng', '_layer'].includes(key)) {
+                allKeys.add(key);
+            }
+        });
+    });
+
+    // 基础列
+    const columns = getTableColumns();
+
+    // 追加动态列
+    allKeys.forEach(key => {
+        columns.push({
+            title: key,
+            field: key,
+            editor: "input",
+            headerFilter: "input",
+            minWidth: 100,
+            sorter: "string"
+        });
+    });
+
+    // 更新列定义和数据
+    featureTable.setColumns(columns);
+    featureTable.setData(data);
+
+    console.log(`Table updated with ${data.length} rows and ${columns.length} columns`);
+}
+
+// 表格行点击事件
+function onTableRowClick(e, row) {
+    const data = row.getData();
+    const layer = data._layer;
+
+    if (!layer) {
+        console.warn('Layer not found for row');
+        return;
+    }
+
+    // 使用 SelectionManager 统一管理选中状态
+    if (typeof selectionManager !== 'undefined') {
+        selectionManager.select(layer);
+    }
+
+    // 如果标记属于某个组，先展开该组
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.expandGroupForMarker(layer);
+    }
+
+    // 地图定位到该标记
+    const latlng = layer.getLatLng();
+    if (typeof map !== 'undefined') {
+        map.setView(latlng, Math.max(map.getZoom(), 16), {
+            animate: true,
+            duration: 0.5
+        });
+    }
+
+    // 高亮标记
+    if (typeof highlightMarker === 'function') {
+        highlightMarker(layer);
+    }
+
+    // 打开属性编辑器
+    if (typeof openPropertyDrawer === 'function') {
+        openPropertyDrawer(layer);
+    }
+
+    console.log('Table row clicked:', data.name);
+}
+
+// 单元格编辑回写
+function onCellEdited(cell) {
+    const field = cell.getField();
+    const value = cell.getValue();
+    const rowData = cell.getRow().getData();
+    const layer = rowData._layer;
+
+    if (!layer || !layer.feature) {
+        console.warn('Cannot update layer properties');
+        return;
+    }
+
+    // 回写到 feature properties
+    if (field === 'name') {
+        layer.feature.properties.name = value;
+        layer.options.name = value;
+    } else if (field === 'type' || field === 'address') {
+        layer.feature.properties[field] = value;
+    } else {
+        // 自定义字段
+        layer.feature.properties[field] = value;
+    }
+
+    // 更新其他视图
+    if (typeof updateLayerList === 'function') {
+        updateLayerList();
+    }
+    if (typeof updateGeoJSONEditor === 'function') {
+        updateGeoJSONEditor();
+    }
+
+    console.log(`Cell edited: ${field} = ${value}`);
+}
+
+// 地图标记选中同步到表格
+function syncMapToTable(layer) {
+    if (!featureTable) return;
+
+    const id = layer._leaflet_id;
+
+    // 取消所有选中
+    featureTable.deselectRow();
+
+    // 选中对应行
+    const row = featureTable.getRow(id);
+    if (row) {
+        row.select();
+        row.scrollTo();
+    }
+}
+
+// 切换表格显示/隐藏
+function toggleTableView() {
+    const panel = document.getElementById('tableViewPanel');
+
+    if (panel.style.display === 'none') {
+        // 显示表格
+        panel.style.display = 'flex';
+
+        // 初始化（如果是第一次）
+        if (!isTableInitialized) {
+            initFeatureTable();
+        }
+
+        // 更新数据
+        updateFeatureTable();
+    } else {
+        // 隐藏表格
+        panel.style.display = 'none';
+    }
+}
+
+// 关闭表格
+function closeTableView() {
+    document.getElementById('tableViewPanel').style.display = 'none';
+}
+
+// 全局暴露函数
+window.initFeatureTable = initFeatureTable;
+window.updateFeatureTable = updateFeatureTable;
+window.syncMapToTable = syncMapToTable;
+window.toggleTableView = toggleTableView;
+window.closeTableView = closeTableView;
+
+// DOM 加载完成后绑定事件
+document.addEventListener('DOMContentLoaded', () => {
+    // 切换按钮
+    const toggleBtn = document.getElementById('toggleTableBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleTableView);
+    }
+
+    // 关闭按钮
+    const closeBtn = document.getElementById('closeTableBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeTableView);
+    }
+
+    // 刷新按钮
+    const refreshBtn = document.getElementById('refreshTableBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            updateFeatureTable();
+            showBriefMessage('✅ 表格已刷新');
+        });
+    }
+
+    console.log('Table view module loaded');
+});

@@ -1,0 +1,107 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4074, 39.9042]
+      },
+      "properties": {
+        "name": "北京市中心",
+        "marker-color": "blue",
+        "type": "city"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.3974, 39.9142]
+      },
+      "properties": {
+        "name": "加油站",
+        "marker-color": "red",
+        "type": "gas_station"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4174, 39.8942]
+      },
+      "properties": {
+        "name": "停车场",
+        "marker-color": "blue",
+        "type": "parking"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.3874, 39.9242]
+      },
+      "properties": {
+        "name": "商店",
+        "marker-color": "orange",
+        "type": "shop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4274, 39.8842]
+      },
+      "properties": {
+        "name": "住宅",
+        "marker-color": "green",
+        "type": "home"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4474, 39.9542]
+      },
+      "properties": {
+        "name": "紫色标记",
+        "marker-color": "violet",
+        "type": "poi"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "实线范围圈（3公里）",
+        "radius": 3000,
+        "stroke": "#ff0000",
+        "fill": "#ff0000",
+        "fill-opacity": 0.2
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4074, 39.9042]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "虚线范围圈（5公里）",
+        "radius": 5000,
+        "stroke": "#ff7800",
+        "fill": "#ff7800",
+        "fill-opacity": 0.1,
+        "dashArray": "10, 10",
+        "style": "dashed"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4074, 39.9042]
+      }
+    }
+  ]
+}

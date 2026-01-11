@@ -1,0 +1,152 @@
+/* ==== Table View Panel ==== */
+.table-view-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background: #1e1e1e;
+    border-top: 2px solid #4a90e2;
+    z-index: 998;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.table-view-panel .table-header {
+    padding: 12px 20px;
+    background: #2a2a2a;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.table-view-panel .table-header h3 {
+    margin: 0;
+    color: #4a90e2;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.table-view-panel .table-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-table-control {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-table-control:hover {
+    background: #4a90e2;
+}
+
+#featureTable {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Tabulator 自定义暗色主题 */
+.tabulator {
+    background: #1a1a1a;
+    border: none;
+    font-family: inherit;
+}
+
+.tabulator .tabulator-header {
+    background: #252525;
+    border-bottom: 2px solid #333;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+    background: #252525;
+    border-right: 1px solid #333;
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+    color: #4a90e2;
+    font-weight: 600;
+    padding: 8px;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.tabulator .tabulator-row {
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.tabulator .tabulator-row.tabulator-row-even {
+    background: #1e1e1e;
+}
+
+.tabulator .tabulator-row:hover {
+    background: rgba(74, 144, 226, 0.1);
+    cursor: pointer;
+}
+
+.tabulator .tabulator-row.tabulator-selected {
+    background: rgba(74, 144, 226, 0.25);
+}
+
+.tabulator .tabulator-row .tabulator-cell {
+    border-right: 1px solid #2a2a2a;
+    padding: 8px;
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-editing input {
+    background: #2a2a2a;
+    color: #fff;
+    border: 1px solid #4a90e2;
+    padding: 4px 8px;
+}
+
+.tabulator .tabulator-footer {
+    background: #252525;
+    border-top: 1px solid #333;
+}
+
+/* 表格浮动按钮 */
+.floating-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #4a90e2;
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+    transition: all 0.3s;
+    z-index: 999;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+    background: #357abd;
+    box-shadow: 0 6px 16px rgba(74, 144, 226, 0.6);
+}
+
+.floating-btn:active {
+    transform: scale(0.95);
+}

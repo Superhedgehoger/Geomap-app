@@ -1,0 +1,3774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoJSON 地图编辑器</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <!-- Leaflet.draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+        crossorigin="" />
+    <!-- Custom Styles -->
+    <style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#map {
+    flex-grow: 1;
+    height: 100%;
+    z-index: 1;
+}
+
+.panel {
+    width: 250px;
+    background: #1e1e1e;
+    padding: 15px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#controls {
+    border-right: 1px solid #333;
+}
+
+#layerPanel {
+    border-left: 1px solid #333;
+    display: none;
+    /* Hidden by default, toggled by button */
+}
+
+/* Editor Panel Overlay */
+#editorPanel {
+    position: absolute;
+    bottom: 20px;
+    left: 340px;
+    right: 20px;
+    height: 400px;
+    background: rgba(30, 30, 30, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+}
+
+#geojsonEditor {
+    width: 100%;
+    height: 300px;
+    background: #121212;
+    color: #f0f0f0;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    resize: none;
+    margin-bottom: 15px;
+    flex-grow: 1;
+    line-height: 1.5;
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group label {
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: #aaa;
+}
+
+.control-group select,
+.control-group input[type="file"],
+.control-group input[type="number"],
+.control-group input[type="text"],
+.control-group button {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.control-group select,
+.control-group input[type="number"],
+.control-group input[type="text"] {
+    background: #2c2c2c;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    transition: border-color 0.2s;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+    border-color: #4a90e2;
+}
+
+.control-group button {
+    background: #4a90e2;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.control-group button:hover {
+    background: #357ab8;
+    transform: translateY(-1px);
+}
+
+.control-group button:active {
+    transform: translateY(0);
+}
+
+.control-group input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* Layer list items */
+#layerList {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.layer-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 3px solid #4a90e2;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.layer-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.layer-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.layer-name {
+    font-weight: 600;
+    color: #f0f0f0;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+}
+
+.layer-type {
+    font-size: 0.75rem;
+    color: #888;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.layer-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.layer-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 4px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.layer-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.layer-btn.delete {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.layer-btn.delete:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+/* Leaflet map container adjustments */
+.leaflet-container {
+    background: #0e0e0e;
+}
+
+/* Divider */
+.divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    margin: 20px 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Layer labels */
+.layer-label {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px !important;
+    color: #fff !important;
+    font-size: 0.85rem !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    font-family: 'Segoe UI', sans-serif !important;
+}
+
+.layer-label::before {
+    border-top-color: rgba(0, 0, 0, 0.8) !important;
+    line-height: 1.5;
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group label {
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: #aaa;
+}
+
+.control-group select,
+.control-group input[type="file"],
+.control-group input[type="number"],
+.control-group input[type="text"],
+.control-group button {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.control-group select,
+.control-group input[type="number"],
+.control-group input[type="text"] {
+    background: #2c2c2c;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    transition: border-color 0.2s;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+    border-color: #4a90e2;
+}
+
+.control-group button {
+    background: #4a90e2;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.control-group button:hover {
+    background: #357ab8;
+    transform: translateY(-1px);
+}
+
+.control-group button:active {
+    transform: translateY(0);
+}
+
+.control-group input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* Layer list items */
+#layerList {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.layer-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 3px solid #4a90e2;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.layer-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.layer-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.layer-name {
+    font-weight: 600;
+    color: #f0f0f0;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+}
+
+.layer-type {
+    font-size: 0.75rem;
+    color: #888;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.layer-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.layer-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 4px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.layer-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.layer-btn.delete {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.layer-btn.delete:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+/* Leaflet map container adjustments */
+.leaflet-container {
+    background: #0e0e0e;
+}
+
+/* Divider */
+.divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    margin: 20px 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Layer labels */
+.layer-label {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px !important;
+    color: #fff !important;
+    font-size: 0.85rem !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    font-family: 'Segoe UI', sans-serif !important;
+}
+
+.layer-label::before {
+    border-top-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Context Menu */
+.context-menu {
+    position: absolute;
+    background: rgba(35, 35, 35, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 6px 0;
+    min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.context-menu-item:hover {
+    background: rgba(74, 144, 226, 0.2);
+    color: #fff;
+}
+
+/* Leaflet Draw Toolbar Icon Styling - Normal Colors */
+.leaflet-draw-toolbar a,
+.leaflet-draw-actions a {
+    background-color: #f4f4f4 !important;
+    border: 1px solid #aaa !important;
+    color: #333 !important;
+    text-decoration: none !important;
+}
+
+.leaflet-draw-toolbar a:hover,
+.leaflet-draw-actions a:hover {
+    background-color: #fff !important;
+}
+
+/* Disabled state */
+.leaflet-draw-toolbar .leaflet-disabled {
+    background-color: rgba(200, 200, 200, 0.5) !important;
+    border-color: rgba(100, 100, 100, 0.3) !important;
+}
+
+.leaflet-draw-toolbar .leaflet-disabled>* {
+    opacity: 0.5 !important;
+}
+
+/* Custom Marker Icon Container */
+.custom-marker-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
+.custom-marker-wrapper {
+    position: relative;
+    width: 30px;
+    height: 42px;
+}
+
+.custom-marker-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s;
+}
+
+.custom-marker-circle:hover {
+    transform: scale(1.1);
+}
+
+.custom-marker-circle i {
+    color: white;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.custom-marker-tip {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 10px solid;
+    z-index: 1;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* ===== Event Tracker Panel ===== */
+#eventTrackerPanel {
+    width: 320px;
+    border-left: 1px solid #333;
+    display: none;
+}
+
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex: 1;
+}
+
+#closeEventTrackerBtn {
+    background: #e74c3c;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 500;
+    z-index: 10;
+    position: relative;
+}
+
+#closeEventTrackerBtn:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+}
+
+
+.tracker-section {
+    margin-bottom: 25px;
+}
+
+.tracker-section h3 {
+    font-size: 0.9rem;
+    color: #4a90e2;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Card-style Lists */
+.todo-item,
+.url-item,
+.timeline-event {
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.todo-item:hover,
+.url-item:hover,
+.timeline-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border-color: #4a90e2;
+}
+
+/* Component Styles */
+.todo-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.url-input-group,
+.timeline-input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.todo-input-group input {
+    flex: 1;
+    min-width: 0;
+}
+
+.url-input-group input[type="text"],
+.url-input-group input[type="url"] {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+.timeline-input-group input[type="datetime-local"] {
+    flex: 1 1 45%;
+    min-width: 120px;
+}
+
+.timeline-input-group input[type="text"] {
+    flex: 1 1 45%;
+    min-width: 80px;
+}
+
+.todo-input-group input,
+.url-input-group input,
+.timeline-input-group input {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+
+.timeline-input-group input[type="datetime-local"] {
+    font-family: 'Consolas', monospace;
+    color-scheme: dark;
+}
+
+.todo-input-group input:focus,
+.url-input-group input:focus,
+.timeline-input-group input:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+.todo-input-group button,
+.url-input-group button,
+.timeline-input-group button {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    width: 38px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    font-weight: normal;
+    padding: 0;
+}
+
+.todo-input-group button:hover,
+.url-input-group button:hover,
+.timeline-input-group button:hover {
+    background: #357ab8;
+    transform: translateY(-1px);
+}
+
+/* Specific Item Tweaks */
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.todo-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #4a90e2;
+}
+
+.todo-item-text {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: #e0e0e0;
+}
+
+.todo-item-text.completed {
+    color: #666;
+    text-decoration: line-through;
+}
+
+.todo-item-time {
+    font-size: 0.75rem;
+    color: #666;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+.todo-item-delete,
+.url-item-delete,
+.timeline-event-delete {
+    background: transparent;
+    color: #666;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.todo-item-delete:hover,
+.url-item-delete:hover,
+.timeline-event-delete:hover {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+/* URL Items */
+.url-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.url-item a {
+    flex: 1;
+    color: #4a90e2;
+    text-decoration: none;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.url-item a:hover {
+    text-decoration: underline;
+}
+
+/* Timeline specific */
+.timeline-event {
+    border-left: 3px solid #4a90e2;
+    padding-left: 15px;
+    padding-right: 35px;
+    /* Make room for delete button */
+}
+
+/* Remove old dot styles as we are using cards now */
+.timeline-event::before {
+    display: none;
+}
+
+#timelineDisplay {
+    padding-left: 0;
+}
+
+.timeline-event-date {
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    color: #4a90e2;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.timeline-event-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #e0e0e0;
+    margin-bottom: 4px;
+}
+
+.timeline-event-description {
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.4;
+    margin-top: 4px;
+}
+
+.timeline-event-delete {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+/* Notes Textarea */
+#eventNotes {
+    width: 100%;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.95rem;
+    resize: vertical;
+    outline: none;
+    min-height: 100px;
+    transition: border-color 0.2s;
+}
+
+#eventNotes:focus {
+    border-color: #4a90e2;
+}
+
+/* Save Button */
+#saveEventDataBtn {
+    width: 100%;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-top: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+#saveEventDataBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3);
+}
+
+.timeline-input-group input[type="text"] {
+    flex: 2;
+}
+
+.timeline-input-group input[type="datetime-local"] {
+    flex: 1.5;
+}
+
+/* ==== Event List View Styles ==== */
+#eventListView {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#eventListContainer {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 250px);
+    padding-right: 5px;
+}
+
+.event-card {
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-card:hover {
+    border-color: #4a90e2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.event-card-info {
+    flex: 1;
+}
+
+.event-card-date {
+    font-size: 0.8rem;
+    color: #4a90e2;
+    margin-bottom: 4px;
+    font-family: 'Consolas', monospace;
+}
+
+.event-card-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.event-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.event-card-actions button {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background: #4a90e2;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #357ab8;
+}
+
+.btn-delete {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c !important;
+}
+
+.btn-delete:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-add-event {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background: linear-gradient(135deg, #4a90e2, #357ab8);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+/* Event Edit View */
+#eventEditView {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.edit-view-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.btn-back {
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+#currentEventName {
+    flex: 1;
+    padding: 10px 12px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+#currentEventName:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+.scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    max-height: calc(100vh - 320px);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: #444;
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+}
+
+/* ==== Archive Section Styles ==== */
+.archive-section {
+    margin-top: 10px;
+}
+
+.archive-section h3 {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 10px;
+}
+
+.archive-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.archive-controls select {
+    flex: 1;
+    padding: 8px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.archive-controls button {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.archive-controls button:first-of-type {
+    background: #4a90e2;
+    color: white;
+}
+
+.archive-controls button:last-of-type {
+    background: #2ecc71;
+    color: white;
+}
+
+.archive-controls button:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.archive-hint {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* ==== New Archive Management Styles ==== */
+.archive-create {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.archive-create input {
+    flex: 1;
+    padding: 8px 10px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.archive-create button {
+    padding: 8px 14px;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.archive-create button:hover {
+    background: #357ab8;
+}
+
+.archive-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #252525;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border: 1px solid #333;
+}
+
+.archive-item:hover {
+    border-color: #4a90e2;
+}
+
+.archive-item-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #e0e0e0;
+}
+
+.archive-item-date {
+    font-size: 0.7rem;
+    color: #666;
+    margin-right: 10px;
+}
+
+.archive-item-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.archive-item-actions button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.archive-item-actions .load-btn {
+    background: #2ecc71;
+    color: white;
+}
+
+.archive-item-actions .delete-btn {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.current-archive {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(74, 144, 226, 0.15);
+    border: 1px solid #4a90e2;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.current-archive span {
+    font-size: 0.85rem;
+    color: #4a90e2;
+}
+
+.current-archive button {
+    padding: 6px 12px;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* ==== Attachment Styles ==== */
+.attachment-upload {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.attachment-upload input[type="file"] {
+    display: none;
+}
+
+.upload-btn {
+    padding: 8px 14px;
+    background: #4a90e2;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.upload-btn:hover {
+    background: #357ab8;
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.attachment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #252525;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+.attachment-item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.attachment-item-icon {
+    font-size: 1.2rem;
+}
+
+.attachment-item-name {
+    font-size: 0.85rem;
+    color: #e0e0e0;
+}
+
+.attachment-item-size {
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.attachment-item-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.attachment-item-actions button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    background: #4a90e2;
+    color: white;
+}
+
+.attachment-item-actions .delete-btn {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+</style>
+</head>
+
+<body>
+    <!-- 左侧控制面板 -->
+    <div id="controls" class="panel">
+        <h2>地图控制</h2>
+
+        <!-- 基础功能 -->
+        <div class="control-group">
+            <label for="baseMapSelect">底图选择：</label>
+            <select id="baseMapSelect">
+                <option value="osm">OpenStreetMap</option>
+                <option value="stamen">Stamen Toner</option>
+                <option value="carto">CartoDB Positron</option>
+            </select>
+        </div>
+
+        <hr class="divider">
+
+        <!-- GeoJSON 功能 -->
+        <div class="control-group">
+            <button id="exportGeoJSONBtn">导出 GeoJSON</button>
+        </div>
+        <div class="control-group">
+            <label for="geojsonFile">导入 GeoJSON：</label>
+            <input type="file" id="geojsonFile" accept=".json,.geojson" />
+        </div>
+        <div class="control-group">
+            <button id="toggleEditorBtn">显示代码编辑器</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 图层面板控制 -->
+        <div class="control-group">
+            <button id="toggleLayerPanelBtn">显示图层面板</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Excel/CSV 数据导入导出 -->
+        <div class="control-group">
+            <label>下载导入模板：</label>
+            <button id="downloadTemplateBtn">下载 Excel 模板</button>
+        </div>
+        <div class="control-group">
+            <label for="excelFile">导入 Excel：</label>
+            <input type="file" id="excelFile" accept=".xlsx,.xls" />
+        </div>
+        <div class="control-group">
+            <button id="exportExcelBtn">导出 Excel（完整字段）</button>
+        </div>
+        <div class="control-group">
+            <label for="coordFile">导入 CSV：</label>
+            <input type="file" id="coordFile" accept=".csv,.txt" />
+        </div>
+        <div class="control-group">
+            <button id="exportBtn">导出 CSV（仅坐标）</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 工具功能 -->
+        <div class="control-group">
+            <button id="togglePickerBtn">启用坐标拾取</button>
+            <div id="pickedCoords" style="font-size:0.8rem; color:#aaa; margin-top:4px;"></div>
+        </div>
+        <div class="control-group">
+            <label>手动添加标注：</label>
+            <input type="text" id="manualNote" placeholder="输入备注信息" />
+            <button id="addManualMarkerBtn">点击地图添加</button>
+        </div>
+        <div class="control-group">
+            <label for="searchAddress">搜索地址：</label>
+            <input type="text" id="searchAddress" placeholder="输入地址搜索" />
+            <button id="searchBtn">搜索</button>
+        </div>
+        <div class="control-group">
+            <label>输入坐标定位：</label>
+            <input type="number" id="gotoLat" placeholder="纬度" step="0.000001" style="width:100%; margin-bottom:4px;" />
+            <input type="number" id="gotoLng" placeholder="经度" step="0.000001" style="width:100%; margin-bottom:4px;" />
+            <button id="gotoCoordBtn">跳转到中心</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 显示选项 -->
+        <div class="control-group">
+            <label for="markerIconSelect">标记图标样式：</label>
+            <select id="markerIconSelect">
+                <option value="blue">蓝色标记</option>
+                <option value="red">红色标记</option>
+                <option value="green">绿色标记</option>
+                <option value="orange">橙色标记</option>
+                <option value="yellow">黄色标记</option>
+                <option value="violet">紫色标记</option>
+                <option value="grey">灰色标记</option>
+                <option value="black">黑色标记</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="showLabelsCheck" />
+                显示标注名称
+            </label>
+        </div>
+    </div>
+
+    <!-- 右侧图层面板 -->
+    <div id="layerPanel" class="panel">
+        <h2>图层列表</h2>
+        <div id="layerList"></div>
+        <button id="clearAllBtn" style="margin-top:10px; width:100%; background:#e74c3c;">清空所有图层</button>
+
+        <hr class="divider">
+
+        <!-- 存档管理 -->
+        <div class="archive-section">
+            <h3>💾 存档管理</h3>
+            <div class="archive-create">
+                <input type="text" id="newArchiveName" placeholder="输入存档名称..." />
+                <button onclick="createArchive()">新建</button>
+            </div>
+            <div id="archiveList" class="archive-list"></div>
+            <div id="currentArchiveInfo" class="current-archive" style="display:none;">
+                <span>当前: <strong id="currentArchiveName"></strong></span>
+                <button onclick="saveCurrentArchive()">保存</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 战略事件追踪器面板 -->
+    <div id="eventTrackerPanel" class="panel" style="display:none;">
+        <div class="panel-header">
+            <h2>战略事件追踪器</h2>
+            <button id="closeEventTrackerBtn" onclick="closeEventTracker()">关闭</button>
+        </div>
+
+        <p id="eventTrackerFeatureName" style="font-weight:600; margin-bottom:10px; color:#4a90e2;"></p>
+
+        <!-- 事件列表视图 -->
+        <div id="eventListView">
+            <div id="eventListContainer"></div>
+            <button class="btn-add-event" onclick="createNewEvent()">+ 新增事件</button>
+        </div>
+
+        <!-- 事件编辑视图 -->
+        <div id="eventEditView" style="display:none;">
+            <div class="edit-view-header">
+                <button class="btn-back" onclick="showEventList()">◀ 返回列表</button>
+                <input type="text" id="currentEventName" placeholder="事件名称" />
+            </div>
+
+            <div id="eventTrackerContent" class="scrollable-content">
+                <!-- Todo List Section -->
+                <div class="tracker-section">
+                    <h3>任务清单</h3>
+                    <div class="todo-input-group">
+                        <input type="text" id="newTodoInput" placeholder="添加新任务..." />
+                        <button id="addTodoBtn" onclick="addTodoItemClick()">+</button>
+                    </div>
+                    <div id="todoList"></div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="tracker-section">
+                    <h3>备注说明</h3>
+                    <textarea id="eventNotes" placeholder="输入文本描述..." rows="4"></textarea>
+                </div>
+
+                <!-- URL Links Section -->
+                <div class="tracker-section">
+                    <h3>相关链接</h3>
+                    <div class="url-input-group">
+                        <input type="text" id="urlTitle" placeholder="链接标题" />
+                        <input type="url" id="urlAddress" placeholder="URL地址" />
+                        <button id="addUrlBtn" onclick="addUrlItemClick()">+</button>
+                    </div>
+                    <div id="urlList"></div>
+                </div>
+
+                <!-- Timeline Section -->
+                <div class="tracker-section">
+                    <h3>时间轴</h3>
+                    <div class="timeline-input-group">
+                        <input type="datetime-local" id="timelineDate" step="60" />
+                        <input type="text" id="timelineTitle" placeholder="事件标题" />
+                        <button id="addTimelineBtn" onclick="addTimelineEventClick()">+</button>
+                    </div>
+                    <div id="timelineDisplay"></div>
+                </div>
+
+                <!-- Attachments Section -->
+                <div class="tracker-section">
+                    <h3>📎 附件</h3>
+                    <div class="attachment-upload">
+                        <input type="file" id="attachmentInput" onchange="uploadAttachment()" />
+                        <label for="attachmentInput" class="upload-btn">选择文件</label>
+                        <span class="upload-hint">支持图片、PDF等 (最大500KB)</span>
+                    </div>
+                    <div id="attachmentList" class="attachment-list"></div>
+                </div>
+            </div>
+
+
+            <!-- Save Button -->
+            <button id="saveEventDataBtn" onclick="saveCurrentEvent()">保存事件</button>
+        </div>
+    </div>
+
+
+    <!--地图容器 -->
+    <div id="map"></div>
+
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu" style="display:none;">
+        <div class="context-menu-item" onclick="openEventTrackerFromMenu()">📋 事件追踪器</div>
+        <div class="context-menu-item" onclick="editMarkerProperties()">编辑属性</div>
+        <div class="context-menu-item" onclick="changeMarkerIcon()">更改图标</div>
+        <div class="context-menu-item" onclick="deleteSelectedMarker()">删除标记</div>
+    </div>
+
+    <!-- GeoJSON 代码编辑器（默认隐藏） -->
+    <div id="editorPanel" style="display:none;">
+        <h2>GeoJSON 编辑器</h2>
+
+        <!-- Code Archive Management -->
+        <div class="archive-section" style="margin-bottom:10px;">
+            <div class="archive-create">
+                <input type="text" id="newCodeArchiveName" placeholder="输入代码存档名称..." />
+                <button onclick="createCodeArchive()">新建</button>
+            </div>
+            <div id="codeArchiveList" class="archive-list" style="max-height:120px;"></div>
+            <div id="currentCodeArchiveInfo" class="current-archive" style="display:none;">
+                <span>当前: <strong id="currentCodeArchiveName"></strong></span>
+                <button onclick="saveCurrentCodeArchive()">保存</button>
+            </div>
+        </div>
+
+
+        <textarea id="geojsonEditor" spellcheck="false"></textarea>
+
+        <div style="display:flex; gap:10px;">
+            <button id="applyEditorBtn" style="flex:1;">应用到地图</button>
+            <button
+                onclick="document.getElementById('editorPanel').style.display='none'; document.getElementById('toggleEditorBtn').textContent='显示代码编辑器'"
+                style="flex:1; background:#e74c3c;">关闭</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- Leaflet.draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" crossorigin=""></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
+        crossorigin="anonymous"></script>
+    <!-- SheetJS for Excel support -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+// script.js - GeoJSON Map Editor with FontAwesome marker icons
+
+// ==== Configuration ==== //
+const AMAP_API_KEY = 'f9ef1f8a897389df48a43e18ac4660d8';
+const AMAP_GEOCODE_URL = 'https://restapi.amap.com/v3/geocode/geo';
+
+// ==== Initialize Map ==== //
+const map = L.map('map').setView([36.0671, 120.3826], 12); // 青岛市中心
+
+// Base layers
+const baseLayers = {
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+    }),
+    stamen: L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
+        attribution: '&copy; Stamen Design',
+        maxZoom: 20,
+    }),
+    carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CartoDB',
+        maxZoom: 19,
+    }),
+};
+baseLayers.osm.addTo(map);
+
+// ==== FontAwesome Icon Marker System ==== //
+// Map marker-symbol values to FontAwesome icon classes
+const iconClassMap = {
+    'car': 'fa-solid fa-car',
+    'vehicle': 'fa-solid fa-car',
+    'shop': 'fa-solid fa-bag-shopping',
+    'store': 'fa-solid fa-bag-shopping',
+    'fuel': 'fa-solid fa-gas-pump',
+    'gas_station': 'fa-solid fa-gas-pump',
+    'warehouse': 'fa-solid fa-warehouse',
+    'building': 'fa-solid fa-warehouse',
+    'default': 'fa-solid fa-location-dot'
+};
+
+// Create custom marker icon with FontAwesome
+function createCustomMarkerIcon(color, symbol) {
+    // Default to blue if color not provided or invalid
+    if (!color || color.indexOf('#') !== 0) {
+        color = '#4a90e2'; // default blue
+    }
+
+    // Get FontAwesome icon class
+    const iconClass = iconClassMap[symbol] || iconClassMap['default'];
+
+    // Create HTML with circular background and FontAwesome icon
+    // Create HTML with circular background and FontAwesome icon
+    const html = `
+        <div class="custom-marker-wrapper">
+            <div class="custom-marker-circle" style="background-color: ${color};">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="custom-marker-tip" style="border-top-color: ${color};"></div>
+        </div>
+    `;
+
+    return L.divIcon({
+        html: html,
+        className: 'custom-marker-icon',
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -42]
+    });
+}
+
+// Determine icon based on feature properties
+function getMarkerIcon(properties) {
+    let color = '#4a90e2'; // default blue
+    let symbol = 'default';
+
+    if (properties) {
+        // Read marker-color (hex color like #00AA00)
+        if (properties['marker-color']) {
+            color = properties['marker-color'];
+            // If it's a named color, convert to hex
+            if (color.indexOf('#') !== 0) {
+                const colorMap = {
+                    'blue': '#4a90e2',
+                    'red': '#e74c3c',
+                    'green': '#2ecc71',
+                    'orange': '#f39c12',
+                    'yellow': '#f1c40f',
+                    'violet': '#9b59b6',
+                    'purple': '#800080',
+                    'grey': '#95a5a6',
+                    'black': '#2c3e50'
+                };
+                color = colorMap[color.toLowerCase()] || '#4a90e2';
+            }
+        }
+
+        // Read marker-symbol or type
+        if (properties['marker-symbol']) {
+            symbol = properties['marker-symbol'];
+        } else if (properties.type) {
+            const type = properties.type.toLowerCase();
+            const symbolMap = {
+                'shop': 'shop',
+                'store': 'shop',
+                '商店': 'shop',
+                '快准服务站': 'shop',
+                'warehouse': 'warehouse',
+                'building': 'warehouse',
+                '仓库': 'warehouse',
+                '新康众服务站': 'warehouse',
+                'fuel': 'fuel',
+                'gas_station': 'fuel',
+                '加油站': 'fuel',
+                '汽服门店': 'fuel',
+                'car': 'car',
+                'vehicle': 'car',
+                '汽车': 'car',
+                '优配服务站': 'car'
+            };
+
+            if (symbolMap[type]) {
+                symbol = symbolMap[type];
+            } else {
+                // Substring match
+                for (const key in symbolMap) {
+                    if (type.includes(key)) {
+                        symbol = symbolMap[key];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return createCustomMarkerIcon(color, symbol);
+}
+
+// ==== Leaflet.draw Setup ==== //
+const drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+L.drawLocal = {
+    draw: {
+        toolbar: {
+            actions: { title: '取消绘制', text: '取消' },
+            finish: { title: '完成绘制', text: '完成' },
+            undo: { title: '删除最后一个点', text: '删除最后一个点' },
+            buttons: {
+                polyline: '绘制折线',
+                polygon: '绘制多边形',
+                rectangle: '绘制矩形',
+                circle: '绘制圆形',
+                marker: '添加标记',
+                circlemarker: '添加圆形标记'
+            }
+        },
+        handlers: {
+            circle: { tooltip: { start: '点击并拖动绘制圆形' }, radius: '半径' },
+            circlemarker: { tooltip: { start: '点击地图放置圆形标记' } },
+            marker: { tooltip: { start: '点击地图放置标记' } },
+            polygon: { tooltip: { start: '点击开始绘制多边形', cont: '点击继续绘制多边形', end: '点击第一个点完成多边形' } },
+            polyline: { error: '<strong>错误:</strong> 线段不能交叉!', tooltip: { start: '点击开始绘制折线', cont: '点击继续绘制折线', end: '点击最后一个点完成折线' } },
+            rectangle: { tooltip: { start: '点击并拖动绘制矩形' } },
+            simpleshape: { tooltip: { end: '释放鼠标完成绘制' } }
+        }
+    },
+    edit: {
+        toolbar: {
+            actions: { save: { title: '保存更改', text: '保存' }, cancel: { title: '取消编辑，放弃所有更改', text: '取消' }, clearAll: { title: '清除所有图层', text: '全部清除' } },
+            buttons: { edit: '编辑图层', editDisabled: '没有可编辑的图层', remove: '删除图层', removeDisabled: '没有可删除的图层' }
+        },
+        handlers: { edit: { tooltip: { text: '拖动控制点或标记来编辑要素', subtext: '点击取消撤销更改' } }, remove: { tooltip: { text: '点击要删除的要素' } } }
+    }
+};
+
+const drawControl = new L.Control.Draw({
+    position: 'topleft',
+    draw: {
+        polyline: { shapeOptions: { color: '#00ff00', weight: 3 } },
+        polygon: { allowIntersection: false, shapeOptions: { color: '#ff7800', fillOpacity: 0.3 } },
+        rectangle: { shapeOptions: { color: '#ff7800', fillOpacity: 0.3 } },
+        circle: { shapeOptions: { color: '#ff7800', fillOpacity: 0.2 } },
+        marker: true,
+        circlemarker: false
+    },
+    edit: { featureGroup: drawnItems, remove: true }
+});
+map.addControl(drawControl);
+
+// ==== UI Elements ==== //
+const baseMapSelect = document.getElementById('baseMapSelect');
+const exportGeoJSONBtn = document.getElementById('exportGeoJSONBtn');
+const geojsonFileInput = document.getElementById('geojsonFile');
+const toggleEditorBtn = document.getElementById('toggleEditorBtn');
+const editorPanel = document.getElementById('editorPanel');
+const geojsonEditor = document.getElementById('geojsonEditor');
+const applyEditorBtn = document.getElementById('applyEditorBtn');
+const layerList = document.getElementById('layerList');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const showLabelsCheck = document.getElementById('showLabelsCheck');
+const markerIconSelect = document.getElementById('markerIconSelect');
+
+// Save slot controls
+const saveSlotSelect = document.getElementById('saveSlotSelect');
+const saveSlotBtn = document.getElementById('saveSlotBtn');
+const loadSlotBtn = document.getElementById('loadSlotBtn');
+
+// Legacy UI elements
+const addressFileInput = document.getElementById('addressFile');
+const exportBtn = document.getElementById('exportBtn');
+const coordFileInput = document.getElementById('coordFile');
+const togglePickerBtn = document.getElementById('togglePickerBtn');
+const pickedCoordsDiv = document.getElementById('pickedCoords');
+const manualNoteInput = document.getElementById('manualNote');
+const addManualMarkerBtn = document.getElementById('addManualMarkerBtn');
+const searchAddressInput = document.getElementById('searchAddress');
+const searchBtn = document.getElementById('searchBtn');
+const gotoLatInput = document.getElementById('gotoLat');
+const gotoLngInput = document.getElementById('gotoLng');
+const gotoCoordBtn = document.getElementById('gotoCoordBtn');
+const toggleLayerPanelBtn = document.getElementById('toggleLayerPanelBtn');
+
+// Excel UI elements
+const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+const excelFileInput = document.getElementById('excelFile');
+const exportExcelBtn = document.getElementById('exportExcelBtn');
+
+// Event Tracker UI elements
+const eventTrackerPanel = document.getElementById('eventTrackerPanel');
+const closeEventTrackerBtn = document.getElementById('closeEventTrackerBtn');
+const eventTrackerFeatureName = document.getElementById('eventTrackerFeatureName');
+const newTodoInput = document.getElementById('newTodoInput');
+const addTodoBtn = document.getElementById('addTodoBtn');
+const todoList = document.getElementById('todoList');
+const eventNotes = document.getElementById('eventNotes');
+const urlTitle = document.getElementById('urlTitle');
+const urlAddress = document.getElementById('urlAddress');
+const addUrlBtn = document.getElementById('addUrlBtn');
+const urlList = document.getElementById('urlList');
+const timelineDate = document.getElementById('timelineDate');
+const timelineTitle = document.getElementById('timelineTitle');
+const addTimelineBtn = document.getElementById('addTimelineBtn');
+const timelineDisplay = document.getElementById('timelineDisplay');
+const saveEventDataBtn = document.getElementById('saveEventDataBtn');
+
+// ==== State Variables ==== //
+let pickerMode = false;
+let manualMarkerMode = false;
+let layerCounter = 0;
+let showLabels = false;
+let currentMarkerColor = 'blue';
+let contextMenuTarget = null;
+let currentTrackedFeature = null; // Feature currently being tracked in event panel
+let currentEditingEventId = null; // Currently editing event ID
+let eventIdCounter = Date.now(); // Unique ID counter for events
+
+
+// ==== Independent Event Storage System ==== //
+const EVENTS_STORAGE_KEY = 'map_events_data';
+
+// Generate unique event ID
+function generateEventId() {
+    return `evt_${eventIdCounter++}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Get all events from localStorage
+function getAllEvents() {
+    try {
+        const data = localStorage.getItem(EVENTS_STORAGE_KEY);
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        console.error('Failed to load events:', e);
+        return {};
+    }
+}
+
+// Save all events to localStorage
+function saveAllEvents(events) {
+    try {
+        localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
+        console.log('Events saved:', Object.keys(events).length);
+    } catch (e) {
+        console.error('Failed to save events:', e);
+    }
+}
+
+// Get event data for a specific feature
+function getEventData(eventId) {
+    const events = getAllEvents();
+    return events[eventId] || null;
+}
+
+// Set event data for a specific feature
+function setEventData(eventId, data) {
+    const events = getAllEvents();
+    events[eventId] = data;
+    saveAllEvents(events);
+}
+
+// Delete event data for a specific feature
+function deleteEventData(eventId) {
+    const events = getAllEvents();
+    if (events[eventId]) {
+        delete events[eventId];
+        saveAllEvents(events);
+    }
+}
+
+// Initialize event data structure
+function initEventData() {
+    return {
+        todos: [],
+        notes: '',
+        urls: [],
+        timeline: []
+    };
+}
+
+
+// ==== Save Slot Management (Legacy - kept for compatibility) ==== //
+function updateSlotOptions() {
+    if (!saveSlotSelect) return; // Element removed, skip
+
+    const slots = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5'];
+    slots.forEach((slotId, index) => {
+        const meta = localStorage.getItem(`geojson_${slotId}_meta`);
+        const option = saveSlotSelect.options[index];
+        if (!option) return;
+
+        if (meta) {
+            try {
+                const { timestamp } = JSON.parse(meta);
+                const date = new Date(timestamp);
+                const dateStr = `${date.getMonth() + 1}-${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                option.text = `存档 ${index + 1} (${dateStr})`;
+            } catch (e) {
+                option.text = `存档 ${index + 1} (已保存)`;
+            }
+        } else {
+            option.text = `存档 ${index + 1} (空)`;
+        }
+    });
+}
+
+// Initialize slot options on page load
+updateSlotOptions();
+
+
+// ==== Helper Functions ==== //
+function updateLayerList() {
+    layerList.innerHTML = '';
+    let index = 0;
+    drawnItems.eachLayer(layer => {
+        const item = document.createElement('div');
+        item.className = 'layer-item';
+        const type = layer instanceof L.Marker ? '标记' :
+            layer instanceof L.Circle ? '圆形' :
+                layer instanceof L.Rectangle ? '矩形' :
+                    layer instanceof L.Polygon ? '多边形' :
+                        layer instanceof L.Polyline ? '折线' : '图层';
+        const name = layer.options.name || `${type} ${index + 1} `;
+        item.innerHTML = `
+        < div class="layer-item-header" >
+                <span class="layer-name">${name}</span>
+                <span class="layer-type">${type}</span>
+            </div >
+        <div class="layer-actions">
+            <button class="layer-btn" onclick="toggleLayerVisibility(${layer._leaflet_id})">隐藏</button>
+            <button class="layer-btn" onclick="renameLayer(${layer._leaflet_id})">重命名</button>
+            <button class="layer-btn delete" onclick="deleteLayer(${layer._leaflet_id})">删除</button>
+        </div>
+    `;
+        layerList.appendChild(item);
+        index++;
+    });
+    updateGeoJSONEditor();
+}
+
+function updateGeoJSONEditor() {
+    const geo = drawnItems.toGeoJSON();
+    geojsonEditor.value = JSON.stringify(geo, null, 2);
+}
+
+function exportGeoJSON() {
+    const data = JSON.stringify(drawnItems.toGeoJSON(), null, 2);
+    const uri = 'data:application/json;charset=utf-8,' + encodeURIComponent(data);
+    const a = document.createElement('a');
+    a.setAttribute('href', uri);
+    a.setAttribute('download', 'map.geojson');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function importGeoJSON(raw) {
+    try {
+        const geo = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        L.geoJSON(geo, {
+            pointToLayer: (feature, latlng) => {
+                const icon = getMarkerIcon(feature.properties);
+                const marker = L.marker(latlng, { icon });
+                marker.feature = { properties: feature.properties || {} };
+                bindMarkerContextMenu(marker);
+                return marker;
+            },
+            style: feature => {
+                const style = {};
+                if (feature.properties) {
+                    if (feature.properties.stroke) style.color = feature.properties.stroke;
+                    if (feature.properties['stroke-width']) style.weight = feature.properties['stroke-width'];
+                    if (feature.properties['stroke-opacity']) style.opacity = feature.properties['stroke-opacity'];
+                    if (feature.properties.fill) style.fillColor = feature.properties.fill;
+                    if (feature.properties['fill-opacity']) style.fillOpacity = feature.properties['fill-opacity'];
+                    if (feature.properties.dashArray || feature.properties.style === 'dashed') style.dashArray = '10,10';
+                }
+                return style;
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties && feature.properties.name) {
+                    layer.options.name = feature.properties.name;
+                }
+                if (layer instanceof L.Circle && feature.properties) {
+                    if (feature.properties.dashArray || feature.properties.style === 'dashed') {
+                        layer.setStyle({ dashArray: '10,10', weight: 2 });
+                    }
+                }
+                // Bind popup for point markers
+                if (layer instanceof L.Marker) {
+                    const latlng = layer.getLatLng();
+                    const name = feature.properties?.name || '';
+                    const type = feature.properties?.type || '';
+                    const address = feature.properties?.address || '';
+                    const popupHtml = `<h3>${name}</h3>` +
+                        `<p>类型: ${type}<br>地址: ${address}<br>` +
+                        `经纬度: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)} ` +
+                        `<button onclick="navigator.clipboard.writeText('${latlng.lat},${latlng.lng}')">复制</button></p>`;
+                    layer.bindPopup(popupHtml);
+                }
+                drawnItems.addLayer(layer);
+                if (layer instanceof L.Marker) bindMarkerContextMenu(layer);
+            }
+        });
+        updateLayerList();
+        if (drawnItems.getLayers().length) map.fitBounds(drawnItems.getBounds());
+    } catch (e) {
+        alert('GeoJSON 解析错误：' + e.message);
+    }
+}
+
+function updateLabels() {
+    drawnItems.eachLayer(layer => {
+        if (layer.getTooltip()) layer.unbindTooltip();
+        if (showLabels && layer.options.name) {
+            layer.bindTooltip(layer.options.name, { permanent: true, direction: 'center', className: 'layer-label' });
+        }
+    });
+}
+
+// ==== Context Menu Functions ==== //
+function bindMarkerContextMenu(marker) {
+    marker.on('contextmenu', e => {
+        contextMenuTarget = marker;
+        const menu = document.getElementById('contextMenu');
+        menu.style.left = e.originalEvent.pageX + 'px';
+        menu.style.top = e.originalEvent.pageY + 'px';
+        menu.style.display = 'block';
+    });
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('contextMenu');
+    menu.style.display = 'none';
+    contextMenuTarget = null;
+}
+
+function editMarkerProperties() {
+    if (!contextMenuTarget) return;
+    const newName = prompt('输入新名称：', contextMenuTarget.options.name || '');
+    if (newName !== null) {
+        contextMenuTarget.options.name = newName;
+        if (!contextMenuTarget.feature) contextMenuTarget.feature = { properties: {} };
+        contextMenuTarget.feature.properties.name = newName;
+        updateLayerList();
+        updateLabels();
+    }
+    hideContextMenu();
+}
+
+function changeMarkerIcon() {
+    if (!contextMenuTarget) return;
+    const color = prompt('输入颜色代码 (例如 #00AA00)：', contextMenuTarget.feature?.properties?.['marker-color'] || '#4a90e2');
+    if (color) {
+        const icon = createCustomMarkerIcon(color, contextMenuTarget.feature?.properties?.['marker-symbol'] || 'default');
+        contextMenuTarget.setIcon(icon);
+        if (!contextMenuTarget.feature) contextMenuTarget.feature = { properties: {} };
+        contextMenuTarget.feature.properties['marker-color'] = color;
+    }
+    hideContextMenu();
+}
+
+function deleteSelectedMarker() {
+    if (!contextMenuTarget) return;
+    drawnItems.removeLayer(contextMenuTarget);
+    updateLayerList();
+    hideContextMenu();
+}
+
+function openEventTrackerFromMenu() {
+    if (!contextMenuTarget) return;
+    openEventTracker(contextMenuTarget);
+    hideContextMenu();
+}
+
+map.on('click', () => hideContextMenu());
+
+// ==== Event Listeners ==== //
+baseMapSelect.addEventListener('change', () => {
+    const sel = baseMapSelect.value;
+    Object.values(baseLayers).forEach(l => map.removeLayer(l));
+    baseLayers[sel].addTo(map);
+});
+
+map.on(L.Draw.Event.CREATED, e => {
+    const layer = e.layer;
+    layer.options.name = `图层 ${++layerCounter} `;
+    if (layer instanceof L.Marker) {
+        const icon = createCustomMarkerIcon('#4a90e2', 'default');
+        layer.setIcon(icon);
+        layer.feature = { properties: { 'marker-color': '#4a90e2' } };
+        bindMarkerContextMenu(layer);
+    }
+    drawnItems.addLayer(layer);
+    updateLayerList();
+    updateLabels();
+});
+
+map.on(L.Draw.Event.EDITED, () => updateLayerList());
+map.on(L.Draw.Event.DELETED, () => updateLayerList());
+
+exportGeoJSONBtn.addEventListener('click', exportGeoJSON);
+geojsonFileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => importGeoJSON(ev.target.result);
+    reader.readAsText(file);
+});
+
+toggleEditorBtn.addEventListener('click', () => {
+    if (editorPanel.style.display === 'none') {
+        editorPanel.style.display = 'flex';
+        toggleEditorBtn.textContent = '隐藏代码编辑器';
+        updateGeoJSONEditor();
+    } else {
+        editorPanel.style.display = 'none';
+        toggleEditorBtn.textContent = '显示代码编辑器';
+    }
+});
+
+applyEditorBtn.addEventListener('click', () => {
+    drawnItems.clearLayers();
+    importGeoJSON(geojsonEditor.value);
+});
+
+clearAllBtn.addEventListener('click', () => {
+    if (confirm('确定要清空所有图层吗？')) {
+        drawnItems.clearLayers();
+        updateLayerList();
+    }
+});
+
+showLabelsCheck.addEventListener('change', e => {
+    showLabels = e.target.checked;
+    updateLabels();
+});
+
+markerIconSelect.addEventListener('change', e => {
+    currentMarkerColor = e.target.value;
+});
+
+// Save Slot Event Listeners (Legacy - elements may be removed)
+if (saveSlotBtn && saveSlotSelect) {
+    saveSlotBtn.addEventListener('click', () => {
+        const slot = saveSlotSelect.value;
+        const content = geojsonEditor.value;
+        const meta = {
+            timestamp: Date.now(),
+            size: content.length
+        };
+        localStorage.setItem(`geojson_${slot}`, content);
+        localStorage.setItem(`geojson_${slot}_meta`, JSON.stringify(meta));
+        updateSlotOptions();
+        console.log('已保存到存档');
+    });
+}
+
+if (loadSlotBtn && saveSlotSelect) {
+    loadSlotBtn.addEventListener('click', () => {
+        const slot = saveSlotSelect.value;
+        const content = localStorage.getItem(`geojson_${slot}`);
+        if (content) {
+            geojsonEditor.value = content;
+        } else {
+            console.log('存档为空');
+        }
+    });
+}
+
+
+// ---- Legacy Features ---- //
+exportBtn.addEventListener('click', () => {
+    const rows = [];
+    drawnItems.eachLayer(l => {
+        if (l instanceof L.Marker) {
+            const ll = l.getLatLng();
+            rows.push(`${ll.lat},${ll.lng} `);
+        }
+    });
+    const csv = 'data:text/csv;charset=utf-8,latitude,longitude\n' + rows.join('\n');
+    const a = document.createElement('a');
+    a.setAttribute('href', encodeURI(csv));
+    a.setAttribute('download', 'coordinates.csv');
+    document.body.appendChild(a);
+    a.click();
+});
+
+// ==== Excel Functions ==== //
+
+// Download Excel Template
+downloadTemplateBtn.addEventListener('click', () => {
+    const templateData = [
+        {
+            '经度 (Longitude)': 120.38,
+            '纬度 (Latitude)': 36.07,
+            '名称 (Name)': '示例标记',
+            '类型 (Type)': 'shop',
+            '地址 (Address)': '山东省青岛市市南区',
+            '标记颜色 (marker-color)': '#4a90e2',
+            '标记符号 (marker-symbol)': 'shop'
+        }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+    XLSX.writeFile(wb, '地图标记导入模板.xlsx');
+});
+
+// Export to Excel with all fields
+exportExcelBtn.addEventListener('click', () => {
+    const data = [];
+    drawnItems.eachLayer(l => {
+        if (l instanceof L.Marker) {
+            const ll = l.getLatLng();
+            const props = l.feature?.properties || {};
+            data.push({
+                '经度 (Longitude)': ll.lng,
+                '纬度 (Latitude)': ll.lat,
+                '名称 (Name)': props.name || '',
+                '类型 (Type)': props.type || '',
+                '地址 (Address)': props.address || '',
+                '标记颜色 (marker-color)': props['marker-color'] || '#4a90e2',
+                '标记符号 (marker-symbol)': props['marker-symbol'] || 'default'
+            });
+        }
+    });
+
+    if (data.length === 0) {
+        alert('没有标记可导出');
+        return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+    XLSX.writeFile(wb, '地图标记数据.xlsx');
+});
+
+// Import from Excel
+excelFileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            const data = new Uint8Array(ev.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+            let addedCount = 0;
+            rows.forEach(row => {
+                // Support multiple column name formats
+                const lng = row['经度 (Longitude)'] || row['Longitude'] || row['lng'] || row['经度'];
+                const lat = row['纬度 (Latitude)'] || row['Latitude'] || row['lat'] || row['纬度'];
+
+                if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                    return;
+                }
+
+                const properties = {
+                    name: row['名称 (Name)'] || row['Name'] || row['name'] || row['名称'] || '未命名',
+                    type: row['类型 (Type)'] || row['Type'] || row['type'] || row['类型'] || '',
+                    address: row['地址 (Address)'] || row['Address'] || row['address'] || row['地址'] || '',
+                    'marker-color': row['标记颜色 (marker-color)'] || row['marker-color'] || row['color'] || '#4a90e2',
+                    'marker-symbol': row['标记符号 (marker-symbol)'] || row['marker-symbol'] || row['symbol'] || 'default'
+                };
+
+                const icon = getMarkerIcon(properties);
+                const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                marker.feature = { properties };
+
+                // Bind popup
+                const latlng = marker.getLatLng();
+                const popupHtml = `<h3>${properties.name}</h3>` +
+                    `<p>类型: ${properties.type}<br>地址: ${properties.address}<br>` +
+                    `经纬度: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)} ` +
+                    `<button onclick="navigator.clipboard.writeText('${latlng.lat},${latlng.lng}')">复制</button></p>`;
+                marker.bindPopup(popupHtml);
+
+                bindMarkerContextMenu(marker);
+                drawnItems.addLayer(marker);
+                addedCount++;
+            });
+
+            if (addedCount > 0) {
+                updateLayerList();
+                map.fitBounds(drawnItems.getBounds());
+                alert(`成功导入 ${addedCount} 个标记`);
+            } else {
+                alert('未找到有效的坐标数据');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Excel 文件解析失败：' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// Enhanced Coord Import with PapaParse and Type Detection
+coordFileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function (results) {
+            const rows = results.data;
+            let addedCount = 0;
+
+            rows.forEach(row => {
+                let lat, lng;
+
+                const latKeys = ['纬度', 'Latitude', 'lat', 'latitude', '纬度 (Latitude)'];
+                const lngKeys = ['经度', 'Longitude', 'lng', 'longitude', '经度 (Longitude)'];
+
+                for (const key of latKeys) {
+                    if (row[key]) { lat = parseFloat(row[key]); break; }
+                }
+                for (const key of lngKeys) {
+                    if (row[key]) { lng = parseFloat(row[key]); break; }
+                }
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const name = row['门店'] || row['name'] || row['Name'] || row['名称'] || '未命名';
+                    const type = row['类型'] || row['type'] || row['Type'] || '';
+                    const address = row['地址'] || row['address'] || row['Address'] || '';
+
+                    const properties = {
+                        name: name,
+                        type: type,
+                        address: address
+                    };
+
+                    const icon = getMarkerIcon(properties);
+                    const marker = L.marker([lat, lng], { icon: icon });
+
+                    marker.feature = { properties: properties };
+
+                    let popupContent = `< b > ${name}</b > `;
+                    if (type) popupContent += `< br > 类型: ${type} `;
+                    if (address) popupContent += `< br > 地址: ${address} `;
+                    marker.bindPopup(popupContent);
+
+                    bindMarkerContextMenu(marker);
+                    drawnItems.addLayer(marker);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                updateLayerList();
+                map.fitBounds(drawnItems.getBounds());
+                alert(`成功导入 ${addedCount} 个标记`);
+            } else {
+                alert('未找到有效的坐标数据，请检查 CSV 文件格式');
+            }
+        },
+        error: function (err) {
+            alert('CSV 解析失败: ' + err.message);
+        }
+    });
+});
+
+if (addressFileInput) {
+    addressFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async ev => {
+            const rows = Papa.parse(ev.target.result, { header: true }).data;
+            for (const row of rows) {
+                const address = row.address || row.Address || row.地址;
+                if (!address) continue;
+                try {
+                    const resp = await fetch(`${AMAP_GEOCODE_URL}?key=${AMAP_API_KEY}&address=${encodeURIComponent(address)}`);
+                    const data = await resp.json();
+                    if (data.geocodes && data.geocodes.length) {
+                        const [lng, lat] = data.geocodes[0].location.split(',');
+                        const icon = createCustomMarkerIcon('#4a90e2', 'default');
+                        const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                        marker.feature = { properties: { name: address } };
+                        bindMarkerContextMenu(marker);
+                        drawnItems.addLayer(marker);
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            updateLayerList();
+            if (drawnItems.getLayers().length) map.fitBounds(drawnItems.getBounds());
+        };
+        reader.readAsText(file);
+    });
+}
+
+
+togglePickerBtn.addEventListener('click', () => {
+    pickerMode = !pickerMode;
+    togglePickerBtn.textContent = pickerMode ? '关闭坐标拾取' : '启用坐标拾取';
+    pickedCoordsDiv.textContent = pickerMode ? '点击地图拾取坐标...' : '';
+    map.getContainer().style.cursor = pickerMode ? 'crosshair' : '';
+});
+
+addManualMarkerBtn.addEventListener('click', () => {
+    manualMarkerMode = !manualMarkerMode;
+    addManualMarkerBtn.textContent = manualMarkerMode ? '取消添加' : '点击地图添加';
+    map.getContainer().style.cursor = manualMarkerMode ? 'crosshair' : '';
+});
+
+// Layer panel toggle
+toggleLayerPanelBtn.addEventListener('click', () => {
+    const panel = document.getElementById('layerPanel');
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'flex';
+        toggleLayerPanelBtn.textContent = '隐藏图层面板';
+    } else {
+        panel.style.display = 'none';
+        toggleLayerPanelBtn.textContent = '显示图层面板';
+    }
+});
+
+searchBtn.addEventListener('click', async () => {
+    const addr = searchAddressInput.value.trim();
+    if (!addr) { alert('请输入地址'); return; }
+    try {
+        const resp = await fetch(`${AMAP_GEOCODE_URL}?key=${AMAP_API_KEY}&address=${encodeURIComponent(addr)}`);
+        const data = await resp.json();
+        if (data.geocodes && data.geocodes.length) {
+            const [lng, lat] = data.geocodes[0].location.split(',');
+            const latN = parseFloat(lat), lngN = parseFloat(lng);
+            map.setView([latN, lngN], 15);
+            const icon = createCustomMarkerIcon('#4a90e2', 'default');
+            const marker = L.marker([latN, lngN], { icon });
+            marker.feature = { properties: { name: addr } };
+            bindMarkerContextMenu(marker);
+            drawnItems.addLayer(marker);
+            updateLayerList();
+        } else {
+            alert('未找到该地址');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('搜索失败');
+    }
+});
+
+gotoCoordBtn.addEventListener('click', () => {
+    const lat = parseFloat(gotoLatInput.value);
+    const lng = parseFloat(gotoLngInput.value);
+    if (isNaN(lat) || isNaN(lng)) { alert('请输入有效坐标'); return; }
+    map.setView([lat, lng], 15);
+    const icon = createCustomMarkerIcon('#4a90e2', 'default');
+    const marker = L.marker([lat, lng], { icon });
+    marker.feature = { properties: { name: `坐标: ${lat.toFixed(6)}, ${lng.toFixed(6)} ` } };
+    bindMarkerContextMenu(marker);
+    drawnItems.addLayer(marker);
+    updateLayerList();
+});
+
+map.on('click', e => {
+    if (pickerMode) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+        pickedCoordsDiv.textContent = `纬度: ${lat}, 经度: ${lng} `;
+        if (navigator.clipboard) navigator.clipboard.writeText(`${lat},${lng} `);
+        return;
+    }
+    if (manualMarkerMode) {
+        const note = manualNoteInput.value.trim() || '无备注';
+        const icon = createCustomMarkerIcon('#4a90e2', 'default');
+        const marker = L.marker(e.latlng, { icon });
+        marker.feature = { properties: { name: note } };
+        bindMarkerContextMenu(marker);
+        drawnItems.addLayer(marker);
+        manualNoteInput.value = '';
+        manualMarkerMode = false;
+        addManualMarkerBtn.textContent = '点击地图添加';
+        map.getContainer().style.cursor = '';
+        updateLayerList();
+        return;
+    }
+});
+
+// ==== Global Functions for Layer Management ==== //
+window.toggleLayerVisibility = function (id) {
+    drawnItems.eachLayer(l => {
+        if (l._leaflet_id === id) {
+            if (map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l);
+        }
+    });
+};
+window.renameLayer = function (id) {
+    drawnItems.eachLayer(l => {
+        if (l._leaflet_id === id) {
+            const newName = prompt('输入新名称：', l.options.name || '');
+            if (newName !== null) {
+                l.options.name = newName;
+                if (!l.feature) l.feature = { properties: {} };
+                l.feature.properties.name = newName;
+                updateLayerList();
+                updateLabels();
+            }
+        }
+    });
+};
+window.deleteLayer = function (id) {
+    drawnItems.eachLayer(l => {
+        if (l._leaflet_id === id) {
+            drawnItems.removeLayer(l);
+            updateLayerList();
+        }
+    });
+};
+
+// ==== Expose Context Menu Functions ==== //
+window.editMarkerProperties = editMarkerProperties;
+window.changeMarkerIcon = changeMarkerIcon;
+window.deleteSelectedMarker = deleteSelectedMarker;
+window.openEventTrackerFromMenu = openEventTrackerFromMenu;
+
+// ==== Global Event Tracker Functions (for onclick) ==== //
+window.closeEventTracker = function () {
+    console.log('closeEventTracker called');
+    if (currentTrackedFeature && currentTrackedFeature._eventId) {
+        const eventData = currentTrackedFeature._currentEventData || initEventData();
+        eventData.notes = eventNotes.value;
+        setEventData(currentTrackedFeature._eventId, eventData);
+        console.log('Event data auto-saved on close');
+    }
+    eventTrackerPanel.style.display = 'none';
+    currentTrackedFeature = null;
+    alert('面板已关闭');
+};
+
+window.saveEventData = function () {
+    console.log('saveEventData called');
+    if (!currentTrackedFeature) {
+        alert('没有选中的图层');
+        return;
+    }
+    const eventData = currentTrackedFeature._currentEventData || initEventData();
+    eventData.notes = eventNotes.value;
+    setEventData(currentTrackedFeature._eventId, eventData);
+    alert('✅ 事件数据已保存！');
+};
+
+
+// ==== Event Tracker System (Multi-Event Support) ==== //
+
+// Get all events for a marker (from feature properties)
+function getMarkerEvents(feature) {
+    if (!feature) return [];
+    // Ensure feature structure exists
+    if (!feature.feature) {
+        feature.feature = { type: 'Feature', properties: {}, geometry: null };
+    }
+    if (!feature.feature.properties) {
+        feature.feature.properties = {};
+    }
+    return feature.feature.properties.events || [];
+}
+
+// Save all events for a marker (to feature properties)
+function saveMarkerEvents(feature, events) {
+    if (!feature) return;
+    // Ensure feature structure exists
+    if (!feature.feature) {
+        feature.feature = { type: 'Feature', properties: {}, geometry: null };
+    }
+    if (!feature.feature.properties) {
+        feature.feature.properties = {};
+    }
+    feature.feature.properties.events = events;
+
+    // Update GeoJSON editor to reflect changes
+    updateGeoJSONEditor();
+    console.log('Events saved to feature:', events.length);
+}
+
+// Open event tracker for a feature - shows event list
+function openEventTracker(feature) {
+    currentTrackedFeature = feature;
+    currentEditingEventId = null;
+
+    // Load data into UI
+    const featureName = feature.options?.name || feature.feature?.properties?.name || '未命名特征';
+    eventTrackerFeatureName.textContent = `📍 ${featureName}`;
+
+    // Show list view, hide edit view
+    showEventList();
+
+    // Show panel
+    eventTrackerPanel.style.display = 'flex';
+    console.log('Event tracker opened');
+}
+
+
+// Show event list view
+function showEventList() {
+    document.getElementById('eventListView').style.display = 'flex';
+    document.getElementById('eventEditView').style.display = 'none';
+
+    renderEventList();
+}
+
+// Render the event list
+function renderEventList() {
+    const container = document.getElementById('eventListContainer');
+    if (!currentTrackedFeature) return;
+
+    const events = getMarkerEvents(currentTrackedFeature);
+
+    if (events.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>📋 暂无事件</p>
+                <p>点击下方按钮添加第一个事件</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Sort by date (newest first)
+    const sortedEvents = [...events].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    container.innerHTML = sortedEvents.map(event => `
+        <div class="event-card" onclick="editEvent('${event.id}')">
+            <div class="event-card-info">
+                <div class="event-card-date">${formatEventDate(event.createdAt)}</div>
+                <div class="event-card-name">${event.name || '未命名事件'}</div>
+            </div>
+            <div class="event-card-actions">
+                <button class="btn-edit" onclick="event.stopPropagation(); editEvent('${event.id}')">编辑</button>
+                <button class="btn-delete" onclick="event.stopPropagation(); deleteEvent('${event.id}')">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Format event date for display
+function formatEventDate(dateString) {
+    if (!dateString) return '未知日期';
+    const d = new Date(dateString);
+    return d.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).replace(/\//g, '-');
+}
+
+// Create new event
+function createNewEvent() {
+    if (!currentTrackedFeature) return;
+
+    const newEvent = {
+        id: generateEventId(),
+        name: '',
+        createdAt: new Date().toISOString(),
+        todos: [],
+        notes: '',
+        urls: [],
+        timeline: []
+    };
+
+    // Add to events list
+    const events = getMarkerEvents(currentTrackedFeature);
+    events.push(newEvent);
+    saveMarkerEvents(currentTrackedFeature, events);
+
+    // Open edit view
+    editEvent(newEvent.id);
+
+}
+
+// Edit an event
+function editEvent(eventId) {
+    if (!currentTrackedFeature) return;
+
+    currentEditingEventId = eventId;
+    const events = getMarkerEvents(currentTrackedFeature);
+    const event = events.find(e => e.id === eventId);
+
+    if (!event) {
+        alert('事件未找到');
+        return;
+    }
+
+    // Store current event data
+    currentTrackedFeature._currentEventData = event;
+
+    // Switch to edit view
+    document.getElementById('eventListView').style.display = 'none';
+    document.getElementById('eventEditView').style.display = 'flex';
+
+    // Load event data into form
+    document.getElementById('currentEventName').value = event.name || '';
+    eventNotes.value = event.notes || '';
+    renderTodoList(event.todos || []);
+    renderUrlList(event.urls || []);
+    renderTimeline(event.timeline || []);
+    renderAttachmentList(event.attachments || []);
+}
+
+
+// Delete an event
+function deleteEvent(eventId) {
+    if (!currentTrackedFeature) return;
+
+    if (!confirm('确定删除此事件？')) return;
+
+    const events = getMarkerEvents(currentTrackedFeature);
+    const index = events.findIndex(e => e.id === eventId);
+
+    if (index !== -1) {
+        events.splice(index, 1);
+        saveMarkerEvents(currentTrackedFeature, events);
+        renderEventList();
+    }
+
+}
+
+// Save current event
+function saveCurrentEvent() {
+    if (!currentTrackedFeature || !currentEditingEventId) {
+        console.log('没有正在编辑的事件');
+        return;
+    }
+
+    const events = getMarkerEvents(currentTrackedFeature);
+    const eventIndex = events.findIndex(e => e.id === currentEditingEventId);
+
+    if (eventIndex === -1) {
+        console.log('事件未找到');
+        return;
+    }
+
+    // Update event data
+    events[eventIndex].name = document.getElementById('currentEventName').value || '未命名事件';
+    events[eventIndex].notes = eventNotes.value;
+    events[eventIndex].todos = currentTrackedFeature._currentEventData?.todos || [];
+    events[eventIndex].urls = currentTrackedFeature._currentEventData?.urls || [];
+    events[eventIndex].timeline = currentTrackedFeature._currentEventData?.timeline || [];
+    events[eventIndex].attachments = currentTrackedFeature._currentEventData?.attachments || [];
+
+    saveMarkerEvents(currentTrackedFeature, events);
+
+
+    // Visual feedback without blocking alert
+
+    const btn = document.getElementById('saveEventDataBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已保存';
+        btn.style.background = '#2ecc71';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+        }, 1500);
+    }
+    console.log('事件已保存');
+}
+
+
+// Make functions globally accessible
+window.createNewEvent = createNewEvent;
+window.editEvent = editEvent;
+window.deleteEvent = deleteEvent;
+window.showEventList = showEventList;
+window.saveCurrentEvent = saveCurrentEvent;
+
+// Wrapper functions for onclick buttons
+window.addTodoItemClick = function () { addTodoItem(); };
+window.addUrlItemClick = function () { addUrlItem(); };
+window.addTimelineEventClick = function () { addTimelineEvent(); };
+
+// ==== Event Archive System ==== //
+
+// Save events to a slot (includes marker info)
+function saveEventSlot() {
+    const slotSelect = document.getElementById('eventSlotSelect');
+    if (!slotSelect) return;
+
+    const slotKey = slotSelect.value;
+    const eventArchive = [];
+
+    // Iterate through all markers and collect events
+    drawnItems.eachLayer(layer => {
+        const events = getMarkerEvents(layer);
+        if (events && events.length > 0) {
+            // Get layer position
+            let coords = null;
+            if (layer.getLatLng) {
+                const ll = layer.getLatLng();
+                coords = { lat: ll.lat, lng: ll.lng };
+            } else if (layer.getBounds) {
+                const center = layer.getBounds().getCenter();
+                coords = { lat: center.lat, lng: center.lng };
+            }
+
+            // Get layer name
+            const name = layer.options?.name || layer.feature?.properties?.name || '未命名';
+
+            eventArchive.push({
+                name: name,
+                coords: coords,
+                events: events
+            });
+        }
+    });
+
+    if (eventArchive.length === 0) {
+        console.log('没有事件需要保存');
+        return;
+    }
+
+    localStorage.setItem(slotKey, JSON.stringify(eventArchive));
+
+    // Visual feedback
+    const btn = document.getElementById('saveEventSlotBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已保存';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+    console.log(`事件存档已保存到 ${slotKey}:`, eventArchive.length, '个标记');
+}
+
+// Load events from a slot
+function loadEventSlot() {
+    const slotSelect = document.getElementById('eventSlotSelect');
+    if (!slotSelect) return;
+
+    const slotKey = slotSelect.value;
+    const data = localStorage.getItem(slotKey);
+
+    if (!data) {
+        console.log('该存档槽为空');
+        return;
+    }
+
+    const eventArchive = JSON.parse(data);
+    let matchCount = 0;
+
+    eventArchive.forEach(archive => {
+        // Try to find matching layer by name + coords
+        let matchedLayer = null;
+
+        drawnItems.eachLayer(layer => {
+            if (matchedLayer) return;
+
+            const layerName = layer.options?.name || layer.feature?.properties?.name || '未命名';
+
+            // Match by name first
+            if (layerName === archive.name) {
+                // Verify by coordinates proximity
+                let layerCoords = null;
+                if (layer.getLatLng) {
+                    const ll = layer.getLatLng();
+                    layerCoords = { lat: ll.lat, lng: ll.lng };
+                } else if (layer.getBounds) {
+                    const center = layer.getBounds().getCenter();
+                    layerCoords = { lat: center.lat, lng: center.lng };
+                }
+
+                if (layerCoords && archive.coords) {
+                    const dist = Math.sqrt(
+                        Math.pow(layerCoords.lat - archive.coords.lat, 2) +
+                        Math.pow(layerCoords.lng - archive.coords.lng, 2)
+                    );
+                    if (dist < 0.001) { // ~100m tolerance
+                        matchedLayer = layer;
+                    }
+                }
+            }
+        });
+
+        if (matchedLayer) {
+            // Restore events to matched layer
+            saveMarkerEvents(matchedLayer, archive.events);
+            matchCount++;
+        }
+    });
+
+    // Visual feedback
+    const btn = document.getElementById('loadEventSlotBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = `✅ 已加载 ${mathCount}`;
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+    console.log(`从 ${slotKey} 加载事件:`, matchCount, '/', eventArchive.length, '匹配');
+}
+
+window.saveEventSlot = saveEventSlot;
+window.loadEventSlot = loadEventSlot;
+
+// ==== Complete Archive System (Simplified) ==== //
+
+// Save complete archive (layers + events as GeoJSON)
+function saveCompleteSlot() {
+    const slotSelect = document.getElementById('completeSlotSelect');
+    if (!slotSelect) return;
+
+    const slotKey = slotSelect.value;
+
+    // Export current layers as GeoJSON with events in properties
+    const geojson = {
+        type: 'FeatureCollection',
+        features: []
+    };
+
+    drawnItems.eachLayer(layer => {
+        if (layer.toGeoJSON) {
+            const feature = layer.toGeoJSON();
+            // Events are already in feature.properties.events (from saveMarkerEvents)
+            geojson.features.push(feature);
+        }
+    });
+
+    localStorage.setItem(slotKey, JSON.stringify(geojson));
+
+    // Visual feedback
+    const btn = document.getElementById('saveCompleteBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已保存';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+    console.log(`完整存档已保存到 ${slotKey}:`, geojson.features.length, '个图层');
+}
+
+// Load complete archive
+function loadCompleteSlot() {
+    const slotSelect = document.getElementById('completeSlotSelect');
+    if (!slotSelect) return;
+
+    const slotKey = slotSelect.value;
+    const data = localStorage.getItem(slotKey);
+
+    if (!data) {
+        console.log('该存档槽为空');
+        return;
+    }
+
+    // Clear current layers
+    drawnItems.clearLayers();
+
+    // Import GeoJSON (events are in properties.events)
+    importGeoJSON(data);
+
+    // Visual feedback
+    const btn = document.getElementById('loadCompleteBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已读取';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+    console.log(`从 ${slotKey} 读取完整存档`);
+}
+
+window.saveCompleteSlot = saveCompleteSlot;
+window.loadCompleteSlot = loadCompleteSlot;
+
+// ==== Unlimited Named Archive System ==== //
+const ARCHIVE_LIST_KEY = 'archive_list';
+let currentArchiveId = null;
+
+// Get archive list
+function getArchiveList() {
+    const data = localStorage.getItem(ARCHIVE_LIST_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+// Save archive list
+function saveArchiveList(list) {
+    localStorage.setItem(ARCHIVE_LIST_KEY, JSON.stringify(list));
+}
+
+// Render archive list UI
+function renderArchiveList() {
+    const container = document.getElementById('archiveList');
+    if (!container) return;
+
+    const archives = getArchiveList();
+
+    if (archives.length === 0) {
+        container.innerHTML = '<p style="color:#666;font-size:0.8rem;text-align:center;">暂无存档</p>';
+        return;
+    }
+
+    container.innerHTML = archives.map(arc => `
+        <div class="archive-item">
+            <span class="archive-item-name">📁 ${arc.name}</span>
+            <span class="archive-item-date">${arc.created}</span>
+            <div class="archive-item-actions">
+                <button class="load-btn" onclick="loadArchive('${arc.id}')">读取</button>
+                <button class="delete-btn" onclick="deleteArchive('${arc.id}')">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Create new archive
+function createArchive() {
+    const nameInput = document.getElementById('newArchiveName');
+    const name = nameInput?.value.trim();
+
+    if (!name) {
+        nameInput?.focus();
+        return;
+    }
+
+    const id = 'arc_' + Date.now();
+    const created = new Date().toLocaleDateString('zh-CN');
+
+    // Save archive data
+    const geojson = {
+        type: 'FeatureCollection',
+        features: []
+    };
+    drawnItems.eachLayer(layer => {
+        if (layer.toGeoJSON) {
+            geojson.features.push(layer.toGeoJSON());
+        }
+    });
+    localStorage.setItem(id, JSON.stringify(geojson));
+
+    // Update archive list
+    const list = getArchiveList();
+    list.unshift({ id, name, created });
+    saveArchiveList(list);
+
+    // Clear input and refresh
+    nameInput.value = '';
+    renderArchiveList();
+
+    // Set as current
+    currentArchiveId = id;
+    updateCurrentArchiveInfo(name);
+
+    console.log('创建存档:', name);
+}
+
+// Load archive
+function loadArchive(id) {
+    const data = localStorage.getItem(id);
+    if (!data) {
+        console.log('存档不存在');
+        return;
+    }
+
+    drawnItems.clearLayers();
+    importGeoJSON(data);
+
+    // Update current archive
+    const list = getArchiveList();
+    const arc = list.find(a => a.id === id);
+    currentArchiveId = id;
+    updateCurrentArchiveInfo(arc?.name || '未知');
+
+    console.log('加载存档:', arc?.name);
+}
+
+// Delete archive
+function deleteArchive(id) {
+    if (!confirm('确定删除此存档？')) return;
+
+    localStorage.removeItem(id);
+
+    const list = getArchiveList().filter(a => a.id !== id);
+    saveArchiveList(list);
+
+    if (currentArchiveId === id) {
+        currentArchiveId = null;
+        document.getElementById('currentArchiveInfo').style.display = 'none';
+    }
+
+    renderArchiveList();
+}
+
+// Save to current archive
+function saveCurrentArchive() {
+    if (!currentArchiveId) return;
+
+    const geojson = {
+        type: 'FeatureCollection',
+        features: []
+    };
+    drawnItems.eachLayer(layer => {
+        if (layer.toGeoJSON) {
+            geojson.features.push(layer.toGeoJSON());
+        }
+    });
+    localStorage.setItem(currentArchiveId, JSON.stringify(geojson));
+
+    // Visual feedback
+    const btn = document.querySelector('#currentArchiveInfo button');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已保存';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+}
+
+// Update current archive info display
+function updateCurrentArchiveInfo(name) {
+    const info = document.getElementById('currentArchiveInfo');
+    const nameEl = document.getElementById('currentArchiveName');
+    if (info && nameEl) {
+        nameEl.textContent = name;
+        info.style.display = 'flex';
+    }
+}
+
+// Initialize archive list on page load
+setTimeout(renderArchiveList, 100);
+
+window.createArchive = createArchive;
+window.loadArchive = loadArchive;
+window.deleteArchive = deleteArchive;
+window.saveCurrentArchive = saveCurrentArchive;
+
+// ==== Attachment System ==== //
+const MAX_ATTACHMENT_SIZE = 500 * 1024; // 500KB
+
+// Upload attachment
+function uploadAttachment() {
+    const input = document.getElementById('attachmentInput');
+    if (!input?.files?.length) return;
+
+    const file = input.files[0];
+
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+        console.log('文件太大，最大支持500KB');
+        input.value = '';
+        return;
+    }
+
+    if (!currentTrackedFeature || !currentEditingEventId) {
+        console.log('请先选择一个事件');
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const attachment = {
+            id: 'att_' + Date.now(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: e.target.result
+        };
+
+        const eventData = currentTrackedFeature._currentEventData;
+        if (!eventData.attachments) eventData.attachments = [];
+        eventData.attachments.push(attachment);
+
+        renderAttachmentList(eventData.attachments);
+        input.value = '';
+
+        console.log('附件已上传:', file.name);
+    };
+    reader.readAsDataURL(file);
+}
+
+// Render attachment list
+function renderAttachmentList(attachments) {
+    const container = document.getElementById('attachmentList');
+    if (!container) return;
+
+    if (!attachments || attachments.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = attachments.map((att, index) => {
+        const icon = getAttachmentIcon(att.type);
+        const size = formatFileSize(att.size);
+        return `
+            <div class="attachment-item">
+                <div class="attachment-item-info">
+                    <span class="attachment-item-icon">${icon}</span>
+                    <span class="attachment-item-name">${att.name}</span>
+                    <span class="attachment-item-size">(${size})</span>
+                </div>
+                <div class="attachment-item-actions">
+                    <button onclick="downloadAttachment(${index})">下载</button>
+                    <button class="delete-btn" onclick="deleteAttachment(${index})">删除</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Get icon for attachment type
+function getAttachmentIcon(type) {
+    if (type.startsWith('image/')) return '🖼️';
+    if (type === 'application/pdf') return '📄';
+    if (type.includes('word')) return '📝';
+    if (type.includes('excel') || type.includes('spreadsheet')) return '📊';
+    return '📎';
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + 'B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+}
+
+// Download attachment
+function downloadAttachment(index) {
+    const eventData = currentTrackedFeature?._currentEventData;
+    if (!eventData?.attachments?.[index]) return;
+
+    const att = eventData.attachments[index];
+    const link = document.createElement('a');
+    link.href = att.data;
+    link.download = att.name;
+    link.click();
+}
+
+// Delete attachment
+function deleteAttachment(index) {
+    const eventData = currentTrackedFeature?._currentEventData;
+    if (!eventData?.attachments) return;
+
+    eventData.attachments.splice(index, 1);
+    renderAttachmentList(eventData.attachments);
+}
+
+window.uploadAttachment = uploadAttachment;
+window.downloadAttachment = downloadAttachment;
+window.deleteAttachment = deleteAttachment;
+
+// ==== Code Editor Archive System ==== //
+const CODE_ARCHIVE_LIST_KEY = 'code_archive_list';
+let currentCodeArchiveId = null;
+
+function getCodeArchiveList() {
+    const data = localStorage.getItem(CODE_ARCHIVE_LIST_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveCodeArchiveList(list) {
+    localStorage.setItem(CODE_ARCHIVE_LIST_KEY, JSON.stringify(list));
+}
+
+function renderCodeArchiveList() {
+    const container = document.getElementById('codeArchiveList');
+    if (!container) return;
+
+    const archives = getCodeArchiveList();
+
+    if (archives.length === 0) {
+        container.innerHTML = '<p style="color:#666;font-size:0.8rem;text-align:center;">暂无代码存档</p>';
+        return;
+    }
+
+    container.innerHTML = archives.map(arc => `
+        <div class="archive-item">
+            <span class="archive-item-name">📝 ${arc.name}</span>
+            <span class="archive-item-date">${arc.created}</span>
+            <div class="archive-item-actions">
+                <button class="load-btn" onclick="loadCodeArchive('${arc.id}')">读取</button>
+                <button class="delete-btn" onclick="deleteCodeArchive('${arc.id}')">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function createCodeArchive() {
+    const nameInput = document.getElementById('newCodeArchiveName');
+    const name = nameInput?.value.trim();
+
+    if (!name) {
+        nameInput?.focus();
+        return;
+    }
+
+    const id = 'code_arc_' + Date.now();
+    const created = new Date().toLocaleDateString('zh-CN');
+
+    // Save current editor content
+    const content = geojsonEditor?.value || '';
+    localStorage.setItem(id, content);
+
+    const list = getCodeArchiveList();
+    list.unshift({ id, name, created });
+    saveCodeArchiveList(list);
+
+    nameInput.value = '';
+    renderCodeArchiveList();
+
+    currentCodeArchiveId = id;
+    updateCurrentCodeArchiveInfo(name);
+
+    console.log('创建代码存档:', name);
+}
+
+function loadCodeArchive(id) {
+    const data = localStorage.getItem(id);
+    if (data === null) {
+        console.log('代码存档不存在');
+        return;
+    }
+
+    if (geojsonEditor) {
+        geojsonEditor.value = data;
+    }
+
+    const list = getCodeArchiveList();
+    const arc = list.find(a => a.id === id);
+    currentCodeArchiveId = id;
+    updateCurrentCodeArchiveInfo(arc?.name || '未知');
+
+    console.log('加载代码存档:', arc?.name);
+}
+
+function deleteCodeArchive(id) {
+    if (!confirm('确定删除此代码存档？')) return;
+
+    localStorage.removeItem(id);
+
+    const list = getCodeArchiveList().filter(a => a.id !== id);
+    saveCodeArchiveList(list);
+
+    if (currentCodeArchiveId === id) {
+        currentCodeArchiveId = null;
+        const info = document.getElementById('currentCodeArchiveInfo');
+        if (info) info.style.display = 'none';
+    }
+
+    renderCodeArchiveList();
+}
+
+function saveCurrentCodeArchive() {
+    if (!currentCodeArchiveId) return;
+
+    const content = geojsonEditor?.value || '';
+    localStorage.setItem(currentCodeArchiveId, content);
+
+    const btn = document.querySelector('#currentCodeArchiveInfo button');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ 已保存';
+        setTimeout(() => { btn.textContent = originalText; }, 1500);
+    }
+}
+
+function updateCurrentCodeArchiveInfo(name) {
+    const info = document.getElementById('currentCodeArchiveInfo');
+    const nameEl = document.getElementById('currentCodeArchiveName');
+    if (info && nameEl) {
+        nameEl.textContent = name;
+        info.style.display = 'flex';
+    }
+}
+
+setTimeout(renderCodeArchiveList, 100);
+
+window.createCodeArchive = createCodeArchive;
+window.loadCodeArchive = loadCodeArchive;
+window.deleteCodeArchive = deleteCodeArchive;
+window.saveCurrentCodeArchive = saveCurrentCodeArchive;
+
+
+// Close event tracker
+if (closeEventTrackerBtn) {
+    closeEventTrackerBtn.addEventListener('click', () => {
+        // Auto-save before closing
+        if (currentTrackedFeature && currentTrackedFeature._eventId) {
+            const eventData = currentTrackedFeature._currentEventData || initEventData();
+            eventData.notes = eventNotes.value;
+            setEventData(currentTrackedFeature._eventId, eventData);
+            console.log('Event data auto-saved on close');
+        }
+        eventTrackerPanel.style.display = 'none';
+        currentTrackedFeature = null;
+    });
+} else {
+    console.error('closeEventTrackerBtn not found!');
+}
+
+// Todo List Functions
+function renderTodoList(todos) {
+    todoList.innerHTML = '';
+    todos.forEach((todo, index) => {
+        const todoItem = document.createElement('div');
+        todoItem.className = 'todo-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = todo.completed;
+        checkbox.addEventListener('change', () => toggleTodoItem(index));
+
+        const text = document.createElement('span');
+        text.className = `todo-item-text${todo.completed ? ' completed' : ''}`;
+        text.textContent = todo.text;
+
+        const time = document.createElement('span');
+        time.className = 'todo-item-time';
+        const date = new Date(todo.created);
+        time.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'todo-item-delete';
+        deleteBtn.textContent = '删除';
+        deleteBtn.addEventListener('click', () => deleteTodoItem(index));
+
+        todoItem.appendChild(checkbox);
+        todoItem.appendChild(text);
+        todoItem.appendChild(time);
+        todoItem.appendChild(deleteBtn);
+        todoList.appendChild(todoItem);
+    });
+}
+
+function addTodoItem() {
+    if (!currentTrackedFeature) return;
+    const text = newTodoInput.value.trim();
+    if (!text) return;
+
+    const eventData = currentTrackedFeature._currentEventData;
+    if (!eventData.todos) eventData.todos = [];
+
+    eventData.todos.push({
+        id: Date.now(),
+        text: text,
+        completed: false,
+        created: Date.now()
+    });
+
+    // Save to localStorage immediately
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderTodoList(eventData.todos);
+    newTodoInput.value = '';
+}
+
+function toggleTodoItem(index) {
+    if (!currentTrackedFeature) return;
+    const eventData = currentTrackedFeature._currentEventData;
+    eventData.todos[index].completed = !eventData.todos[index].completed;
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderTodoList(eventData.todos);
+}
+
+function deleteTodoItem(index) {
+    if (!currentTrackedFeature) return;
+    const eventData = currentTrackedFeature._currentEventData;
+    eventData.todos.splice(index, 1);
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderTodoList(eventData.todos);
+}
+
+
+
+if (addTodoBtn) {
+    addTodoBtn.addEventListener('click', addTodoItem);
+} else {
+    console.error('addTodoBtn not found!');
+}
+
+if (newTodoInput) {
+    newTodoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addTodoItem();
+    });
+}
+
+
+// URL Functions
+function renderUrlList(urls) {
+    urlList.innerHTML = '';
+    urls.forEach((urlItem, index) => {
+        const item = document.createElement('div');
+        item.className = 'url-item';
+
+        const link = document.createElement('a');
+        link.href = urlItem.url;
+        link.target = '_blank';
+        link.textContent = urlItem.title || urlItem.url;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'url-item-delete';
+        deleteBtn.textContent = '删除';
+        deleteBtn.addEventListener('click'
+
+            , () => deleteUrlItem(index));
+
+        item.appendChild(link);
+        item.appendChild(deleteBtn);
+        urlList.appendChild(item);
+    });
+}
+
+function addUrlItem() {
+    if (!currentTrackedFeature) return;
+    const title = urlTitle.value.trim();
+    const url = urlAddress.value.trim();
+
+    if (!url) {
+        return;
+    }
+
+
+    const eventData = currentTrackedFeature._currentEventData;
+    if (!eventData.urls) eventData.urls = [];
+
+    eventData.urls.push({
+        title: title || url,
+        url: url,
+        added: Date.now()
+    });
+
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderUrlList(eventData.urls);
+    urlTitle.value = '';
+    urlAddress.value = '';
+}
+
+function deleteUrlItem(index) {
+    if (!currentTrackedFeature) return;
+    const eventData = currentTrackedFeature._currentEventData;
+    eventData.urls.splice(index, 1);
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderUrlList(eventData.urls);
+}
+
+
+
+if (addUrlBtn) {
+    addUrlBtn.addEventListener('click', addUrlItem);
+} else {
+    console.error('addUrlBtn not found!');
+}
+
+
+// Timeline Functions
+function renderTimeline(events) {
+    timelineDisplay.innerHTML = '';
+
+    // Sort events by date (newest first)
+    const sortedEvents = [...events].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedEvents.forEach((event, index) => {
+        const eventEl = document.createElement('div');
+        eventEl.className = 'timeline-event';
+
+        const date = document.createElement('div');
+        date.className = 'timeline-event-date';
+        const d = new Date(event.date);
+        const dateStr = d.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        date.textContent = dateStr.replace(/\//g, '-');
+
+        const title = document.createElement('div');
+        title.className = 'timeline-event-title';
+        title.textContent = event.title;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'timeline-event-delete';
+        deleteBtn.textContent = '删除';
+        deleteBtn.addEventListener('click', () => deleteTimelineEvent(events.findIndex(e => e.id === event.id)));
+
+        eventEl.appendChild(date);
+        eventEl.appendChild(title);
+        if (event.description) {
+            const desc = document.createElement('div');
+            desc.className = 'timeline-event-description';
+            desc.textContent = event.description;
+            eventEl.appendChild(desc);
+        }
+        eventEl.appendChild(deleteBtn);
+
+        timelineDisplay.appendChild(eventEl);
+    });
+}
+
+function addTimelineEvent() {
+    if (!currentTrackedFeature) return;
+    const date = timelineDate.value;
+    const title = timelineTitle.value.trim();
+
+    if (!date || !title) {
+        return;
+    }
+
+
+    const eventData = currentTrackedFeature._currentEventData;
+    if (!eventData.timeline) eventData.timeline = [];
+
+    eventData.timeline.push({
+        id: Date.now(),
+        date: date,
+        title: title,
+        description: '',
+        type: 'event'
+    });
+
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderTimeline(eventData.timeline);
+    timelineDate.value = '';
+    timelineTitle.value = '';
+}
+
+function deleteTimelineEvent(index) {
+    if (!currentTrackedFeature) return;
+    const eventData = currentTrackedFeature._currentEventData;
+    eventData.timeline.splice(index, 1);
+    setEventData(currentTrackedFeature._eventId, eventData);
+    renderTimeline(eventData.timeline);
+}
+
+
+if (addTimelineBtn) {
+    addTimelineBtn.addEventListener('click', addTimelineEvent);
+} else {
+    console.error('addTimelineBtn not found!');
+}
+
+
+// Save event data button
+if (saveEventDataBtn) {
+    saveEventDataBtn.addEventListener('click', () => {
+        if (!currentTrackedFeature) {
+            alert('没有选中的图层');
+            return;
+        }
+
+        const eventData = currentTrackedFeature._currentEventData;
+        eventData.notes = eventNotes.value;
+        setEventData(currentTrackedFeature._eventId, eventData);
+
+        alert('✅ 事件数据已保存到本地存储！\n\n数据与图层分开存储，刷新页面后重新打开事件追踪器即可查看。');
+    });
+} else {
+    console.error('saveEventDataBtn not found!');
+}
+
+
+// Add click handler to features to open event tracker
+map.on('click', (e) => {
+    // Check if click is on a layer
+    let clickedLayer = null;
+    drawnItems.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+            const latlng = layer.getLatLng();
+            const distance = map.distance(e.latlng, latlng);
+            if (distance < 50) { // 50 meters threshold
+                clickedLayer = layer;
+            }
+        } else if (layer instanceof L.Polygon || layer instanceof L.Polyline || layer instanceof L.Circle) {
+            // Check if click is inside polygon/circle
+            try {
+                if (layer.getBounds && layer.getBounds().contains(e.latlng)) {
+                    clickedLayer = layer;
+                }
+            } catch (err) {
+                // Ignore bounds errors
+            }
+        }
+    });
+
+    // If shift key is pressed and a layer is clicked, open event tracker
+    if (e.originalEvent.shiftKey && clickedLayer) {
+        e.originalEvent.preventDefault();
+        openEventTracker(clickedLayer);
+    }
+});
+
+// ==== Debug: Verify Event Tracker Elements ==== //
+console.log('=== Event Tracker Elements Debug ===');
+console.log('eventTrackerPanel:', eventTrackerPanel ? 'FOUND' : 'NOT FOUND');
+console.log('closeEventTrackerBtn:', closeEventTrackerBtn ? 'FOUND' : 'NOT FOUND');
+console.log('saveEventDataBtn:', saveEventDataBtn ? 'FOUND' : 'NOT FOUND');
+console.log('addTodoBtn:', addTodoBtn ? 'FOUND' : 'NOT FOUND');
+console.log('addUrlBtn:', addUrlBtn ? 'FOUND' : 'NOT FOUND');
+console.log('addTimelineBtn:', addTimelineBtn ? 'FOUND' : 'NOT FOUND');
+console.log('===================================');
+
+// ==== CRITICAL: Define Global Functions at End of Script ==== //
+function closeEventTracker() {
+    console.log('closeEventTracker() called!');
+    try {
+        // Auto-save current event if editing
+        if (currentTrackedFeature && currentEditingEventId) {
+            const events = getMarkerEvents(currentTrackedFeature);
+            const eventIndex = events.findIndex(e => e.id === currentEditingEventId);
+            if (eventIndex !== -1 && currentTrackedFeature._currentEventData) {
+                events[eventIndex].name = document.getElementById('currentEventName')?.value || '未命名事件';
+                events[eventIndex].notes = eventNotes?.value || '';
+                events[eventIndex].todos = currentTrackedFeature._currentEventData.todos || [];
+                events[eventIndex].urls = currentTrackedFeature._currentEventData.urls || [];
+                events[eventIndex].timeline = currentTrackedFeature._currentEventData.timeline || [];
+                saveMarkerEvents(currentTrackedFeature, events);
+            }
+        }
+        document.getElementById('eventTrackerPanel').style.display = 'none';
+        currentTrackedFeature = null;
+        currentEditingEventId = null;
+    } catch (e) {
+        console.error('Error closing:', e);
+    }
+}
+
+// Make sure functions are globally accessible
+window.closeEventTracker = closeEventTracker;
+
+console.log('Global functions defined:', typeof closeEventTracker, typeof saveCurrentEvent);
+
+</script>
+</body>
+
+</html>
