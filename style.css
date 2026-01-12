@@ -4,15 +4,36 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #121212;
     color: #e0e0e0;
-    display: flex;
     height: 100vh;
     overflow: hidden;
+
+    /* CSS Grid 布局：实现面板与表格联动 */
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    /* 左面板 | 地图 | 右面板 */
+    grid-template-rows: 1fr auto;
+    /* 主区域 | 底部表格 */
 }
 
+/* 左侧控制面板 - 占据第一列，仅在第一行 */
+#controls {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+/* 地图区域 - 占据中间列，仅在第一行 */
 #map {
-    flex-grow: 1;
-    height: 100%;
+    grid-row: 1;
+    grid-column: 2;
+    min-height: 0;
+    /* 修复 Grid 中 flex-grow 问题 */
     z-index: 1;
+}
+
+/* 右侧图层面板 - 占据第三列，仅在第一行 */
+#layerPanel {
+    grid-row: 1;
+    grid-column: 3;
 }
 
 .panel {
@@ -2831,6 +2852,7 @@ body.selection-mode::before {
         opacity: 0;
         transform: translateX(-50%) translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
@@ -2844,9 +2866,12 @@ body.selection-mode::before {
 }
 
 @keyframes selectionPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.8), 0 0 20px rgba(255, 107, 107, 0.6);
     }
+
     50% {
         box-shadow: 0 0 0 6px rgba(255, 107, 107, 0.6), 0 0 30px rgba(255, 107, 107, 0.4);
     }

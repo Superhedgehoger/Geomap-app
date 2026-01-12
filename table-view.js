@@ -340,10 +340,11 @@ function syncMapToTable(layer) {
 // 切换表格显示/隐藏
 function toggleTableView() {
     const panel = document.getElementById('tableViewPanel');
+    const isOpen = panel.classList.contains('open');
 
-    if (panel.style.display === 'none') {
-        // 显示表格
-        panel.style.display = 'flex';
+    if (!isOpen) {
+        // 展开表格
+        panel.classList.add('open');
 
         // 初始化（如果是第一次）
         if (!isTableInitialized) {
@@ -352,15 +353,37 @@ function toggleTableView() {
 
         // 更新数据
         updateFeatureTable();
+
+        // 触发地图重绘以适应新布局
+        setTimeout(() => {
+            if (typeof map !== 'undefined') {
+                map.invalidateSize();
+            }
+        }, 350);
     } else {
-        // 隐藏表格
-        panel.style.display = 'none';
+        // 收起表格
+        panel.classList.remove('open');
+
+        // 触发地图重绘
+        setTimeout(() => {
+            if (typeof map !== 'undefined') {
+                map.invalidateSize();
+            }
+        }, 350);
     }
 }
 
 // 关闭表格
 function closeTableView() {
-    document.getElementById('tableViewPanel').style.display = 'none';
+    const panel = document.getElementById('tableViewPanel');
+    panel.classList.remove('open');
+
+    // 触发地图重绘
+    setTimeout(() => {
+        if (typeof map !== 'undefined') {
+            map.invalidateSize();
+        }
+    }, 350);
 }
 
 // 全局暴露函数
