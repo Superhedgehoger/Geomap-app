@@ -159,17 +159,42 @@
 
     <!-- 右侧图层面板 -->
     <div id="layerPanel" class="panel">
-        <h2>图层列表</h2>
+        <h2>图层管理</h2>
 
-        <!-- 统计区域 -->
-        <div id="layerStats" class="layer-stats">
-            <div class="stats-empty">加载中...</div>
+        <!-- 图层列表 -->
+        <div class="layer-list-section">
+            <h3>📋 图层列表</h3>
+            <div id="layerList"></div>
         </div>
 
         <hr class="divider">
 
-        <div id="layerList"></div>
-        <button id="clearAllBtn" style="margin-top:10px; width:100%; background:#e74c3c;">清空所有图层</button>
+        <!-- 图层详情面板（动态显示选中图层信息） -->
+        <div id="layerDetailsPanel" class="layer-details-panel">
+            <h3>📐 图层详情</h3>
+            <div id="layerDetailsContent" class="layer-details-content">
+                <div class="no-selection">请点击上方图层查看详情</div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 快捷操作 -->
+        <div class="layer-actions-section">
+            <h3>⚡ 快捷操作</h3>
+            <div class="layer-action-buttons">
+                <button id="clearAllBtn" class="btn-danger">
+                    <i class="fa-solid fa-trash"></i> 清空所有图层
+                </button>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 统计汇总（移至底部） -->
+        <div id="layerStats" class="layer-stats">
+            <div class="stats-empty">加载中...</div>
+        </div>
 
         <hr class="divider">
 
