@@ -3080,7 +3080,7 @@ body.selection-mode::before {
 }
 
 .timeline-header-actions button {
-    background: linear-gradient(135deg, #27ae60, #1e8449);
+    background: linear-gradient(135deg, #4a90e2, #357abd);
     color: white;
     border: none;
     width: 28px;
@@ -3096,7 +3096,7 @@ body.selection-mode::before {
 }
 
 .timeline-header-actions button:hover {
-    background: linear-gradient(135deg, #1e8449, #196f3d);
+    background: linear-gradient(135deg, #357abd, #2968a3);
     transform: scale(1.05);
 }
 
@@ -3121,6 +3121,12 @@ body.selection-mode::before {
     overflow: hidden;
     margin: 0;
     padding: 0;
+}
+
+/* 左侧面板收起时隐藏历史地图 */
+#controls.collapsed .timeline-section,
+#controls.collapsed .timeline-section+.divider {
+    display: none;
 }
 
 .timeline-empty {
@@ -3506,6 +3512,11 @@ body.selection-mode::before {
     padding: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
+
+    /* 横向排列 */
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
 
     /* Default: hidden */
     opacity: 0;
