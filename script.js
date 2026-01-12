@@ -2896,3 +2896,48 @@ setTimeout(() => {
         initLayerStatsRefresh();
     }
 }, 500);
+
+// ==== Map History / Timeline Toggle ==== //
+function toggleMapHistory() {
+    const section = document.getElementById('mapHistorySection');
+    if (section) {
+        section.classList.toggle('collapsed');
+    }
+}
+window.toggleMapHistory = toggleMapHistory;
+
+// ==== Unified Tools Menu ==== //
+function toggleToolsMenu() {
+    const menu = document.getElementById('toolsMenu');
+    const fab = document.getElementById('toolsFabBtn');
+
+    if (menu && fab) {
+        const isOpen = menu.classList.contains('open');
+        if (isOpen) {
+            menu.classList.remove('open');
+            fab.classList.remove('active');
+        } else {
+            menu.classList.add('open');
+            fab.classList.add('active');
+        }
+    }
+}
+
+function closeToolsMenu() {
+    const menu = document.getElementById('toolsMenu');
+    const fab = document.getElementById('toolsFabBtn');
+
+    if (menu) menu.classList.remove('open');
+    if (fab) fab.classList.remove('active');
+}
+
+window.toggleToolsMenu = toggleToolsMenu;
+window.closeToolsMenu = closeToolsMenu;
+
+// 点击其他地方关闭工具菜单
+document.addEventListener('click', (e) => {
+    const container = document.querySelector('.tools-fab-container');
+    if (container && !container.contains(e.target)) {
+        closeToolsMenu();
+    }
+});

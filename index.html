@@ -32,16 +32,20 @@
             </button>
         </div>
 
-        <!-- 时间轴区域 -->
-        <div class="timeline-section">
-            <div class="timeline-header">
-                <h3>📅 时间轴</h3>
-                <button onclick="timelineManager && timelineManager.saveSnapshotPrompt()" title="保存当前状态">
-                    <i class="fa-solid fa-plus"></i> 保存
-                </button>
+        <!-- 地图历史区域（原时间轴） -->
+        <div class="timeline-section collapsed" id="mapHistorySection">
+            <div class="timeline-header" onclick="toggleMapHistory()">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> 地图历史</h3>
+                <div class="timeline-header-actions">
+                    <button onclick="event.stopPropagation(); timelineManager && timelineManager.saveSnapshotPrompt()"
+                        title="保存当前状态">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+                </div>
             </div>
             <div id="timelineList" class="timeline-list">
-                <div class="timeline-empty">暂无时间点</div>
+                <div class="timeline-empty">暂无历史记录</div>
             </div>
         </div>
 
@@ -459,15 +463,23 @@
         <div id="featureTable"></div>
     </div>
 
-    <!-- 表格切换按钮 -->
-    <button id="toggleTableBtn" class="control-btn floating-btn" title="表格视图">
-        <i class="fa-solid fa-table"></i>
-    </button>
-
-    <!-- 看板按钮（右下角） -->
-    <button id="openDashboardBtn" class="control-btn floating-btn dashboard-btn" title="数据看板">
-        <i class="fa-solid fa-chart-pie"></i>
-    </button>
+    <!-- 统一工具入口（右下角） -->
+    <div class="tools-fab-container">
+        <button id="toolsFabBtn" class="tools-fab" title="工具面板" onclick="toggleToolsMenu()">
+            <i class="fa-solid fa-toolbox"></i>
+        </button>
+        <div id="toolsMenu" class="tools-menu">
+            <button class="tools-menu-item" onclick="toggleTableView(); closeToolsMenu()" title="数据表格">
+                <i class="fa-solid fa-table"></i>
+                <span>表格</span>
+            </button>
+            <button class="tools-menu-item" onclick="dashboardPanel && dashboardPanel.open(); closeToolsMenu()"
+                title="数据看板">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>看板</span>
+            </button>
+        </div>
+    </div>
 
     <!-- 看板面板（右上角） -->
     <div id="dashboardPanel" class="dashboard-panel">
@@ -478,7 +490,7 @@
             </button>
         </div>
         <div id="dashboardContent" class="dashboard-content">
-            <div class="dashboard-empty">点击右下角按钮打开看板</div>
+            <div class="dashboard-empty">暂无数据</div>
         </div>
     </div>
 

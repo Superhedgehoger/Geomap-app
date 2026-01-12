@@ -3030,7 +3030,7 @@ body.selection-mode::before {
     color: #e74c3c;
 }
 
-/* ==== Timeline Section Styles ==== */
+/* ==== Timeline Section Styles (地图历史) ==== */
 
 .timeline-section {
     background: rgba(255, 255, 255, 0.03);
@@ -3043,7 +3043,20 @@ body.selection-mode::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0;
+}
+
+.timeline-section:not(.collapsed) .timeline-header {
     margin-bottom: 10px;
+}
+
+.timeline-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    margin: -6px;
+    padding: 6px;
 }
 
 .timeline-header h3 {
@@ -3051,30 +3064,63 @@ body.selection-mode::before {
     font-size: 0.95rem;
     color: #fff;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.timeline-header button {
+.timeline-header h3 i {
+    color: #4a90e2;
+}
+
+.timeline-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timeline-header-actions button {
     background: linear-gradient(135deg, #27ae60, #1e8449);
     color: white;
     border: none;
-    padding: 6px 12px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border-radius: 4px;
     font-size: 0.8rem;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
     transition: all 0.2s;
 }
 
-.timeline-header button:hover {
+.timeline-header-actions button:hover {
     background: linear-gradient(135deg, #1e8449, #196f3d);
-    transform: translateY(-1px);
+    transform: scale(1.05);
+}
+
+.collapse-icon {
+    color: #888;
+    transition: transform 0.3s ease;
+}
+
+.timeline-section.collapsed .collapse-icon {
+    transform: rotate(-90deg);
 }
 
 .timeline-list {
     max-height: 150px;
     overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+/* 折叠状态 */
+.timeline-section.collapsed .timeline-list {
+    max-height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 .timeline-empty {
@@ -3413,4 +3459,100 @@ body.selection-mode::before {
     text-align: center;
     padding: 10px;
     font-style: italic;
+}
+
+/* ==== Unified Tools FAB Menu ==== */
+
+.tools-fab-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+}
+
+.tools-fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tools-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
+}
+
+.tools-fab.active {
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.tools-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background: rgba(30, 30, 30, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    /* Default: hidden */
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.tools-menu.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.tools-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+}
+
+.tools-menu-item:hover {
+    background: rgba(74, 144, 226, 0.2);
+    color: #fff;
+}
+
+.tools-menu-item i {
+    width: 20px;
+    text-align: center;
+    color: #4a90e2;
+}
+
+/* Hide old floating buttons */
+.floating-btn {
+    display: none !important;
+}
+
+/* Dashboard button offset - deprecated */
+.dashboard-btn {
+    display: none !important;
 }
