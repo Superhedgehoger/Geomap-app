@@ -208,18 +208,15 @@ class TimelineManager {
 
         console.log(`Loading snapshot: ${snapshot.name}`);
 
-        // 清空当前地图
-        if (typeof drawnItems !== 'undefined') {
-            drawnItems.clearLayers();
-        }
-        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
-            markerGroupManager.clear();
-        }
+        // 完整重置地图状态（确保数据隔离）
+        this._resetMapState();
 
         // 恢复图层数据
         snapshot.layers.forEach(layerData => {
             if (layerData.geojson && layerData.geojson.features) {
-                this._importGeoJSON(layerData.geojson);
+                // 深拷贝 GeoJSON 数据，避免引用污染
+                const geojsonCopy = JSON.parse(JSON.stringify(layerData.geojson));
+                this._importGeoJSON(geojsonCopy);
             }
         });
 
@@ -230,10 +227,6 @@ class TimelineManager {
 
         // 恢复自定义组
         if (typeof customGroupManager !== 'undefined' && customGroupManager && snapshot.customGroups) {
-            // 清空现有组
-            customGroupManager.groups.clear();
-            customGroupManager.markerToGroups.clear();
-
             // 重建组（注意：需要在标记加载后执行）
             setTimeout(() => {
                 Object.values(snapshot.customGroups).forEach(groupData => {
@@ -263,6 +256,46 @@ class TimelineManager {
         }
 
         return true;
+    }
+
+    // 完整重置地图状态（确保快照数据隔离）
+    _resetMapState() {
+        console.log('Resetting map state for data isolation...');
+
+        // 1. 清空选中状态
+        if (typeof selectionManager !== 'undefined' && selectionManager) {
+            selectionManager.clearSelection();
+        }
+
+        // 2. 清空高亮状态
+        if (typeof clearAllHighlights === 'function') {
+            clearAllHighlights();
+        }
+
+        // 3. 清空 MarkerGroupManager
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.clear();
+        }
+
+        // 4. 清空 drawnItems
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.clearLayers();
+        }
+
+        // 5. 清空自定义组
+        if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+            customGroupManager.groups.clear();
+            customGroupManager.markerToGroups.clear();
+            customGroupManager.selectedMarkers.clear();
+            customGroupManager._renderGroupList();
+        }
+
+        // 6. 清空索引缓存（如有）
+        if (typeof featureIdIndex !== 'undefined') {
+            featureIdIndex = new Map();
+        }
+
+        console.log('Map state reset complete');
     }
 
     _importGeoJSON(geojson) {

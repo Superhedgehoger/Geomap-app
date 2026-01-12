@@ -264,13 +264,18 @@ function onTableRowClick(e, row) {
         markerGroupManager.expandGroupForMarker(layer);
     }
 
-    // 地图定位到该标记
+    // 地图飞行定位到该标记（更流畅的动画）
     const latlng = layer.getLatLng();
     if (typeof map !== 'undefined') {
-        map.setView(latlng, Math.max(map.getZoom(), 16), {
+        map.flyTo(latlng, Math.max(map.getZoom(), 16), {
             animate: true,
-            duration: 0.5
+            duration: 0.8
         });
+    }
+
+    // 更新 SelectionManager
+    if (typeof selectionManager !== 'undefined') {
+        selectionManager.select(layer, 'table');
     }
 
     // 高亮标记
@@ -283,7 +288,7 @@ function onTableRowClick(e, row) {
         openPropertyDrawer(layer);
     }
 
-    console.log('Table row clicked:', data.name);
+    console.log('Table row clicked, flyTo:', data.name);
 }
 
 // 单元格编辑回写

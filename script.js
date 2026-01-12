@@ -2256,7 +2256,10 @@ function loadArchive(id) {
         return;
     }
 
-    drawnItems.clearLayers();
+    // 完整重置地图状态（确保数据隔离）
+    resetMapStateForImport();
+
+    // 导入数据
     importGeoJSON(data);
 
     // Update current archive
@@ -2265,8 +2268,58 @@ function loadArchive(id) {
     currentArchiveId = id;
     updateCurrentArchiveInfo(arc?.name || '未知');
 
+    // 刷新所有视图
+    setTimeout(() => {
+        if (typeof updateLayerList === 'function') updateLayerList();
+        if (typeof updateFeatureTable === 'function') updateFeatureTable();
+        if (typeof updateDashboard === 'function') updateDashboard();
+        if (typeof updateLayerStats === 'function') updateLayerStats();
+        if (typeof updateLayerDetailsPanel === 'function') updateLayerDetailsPanel();
+    }, 100);
+
     console.log('加载存档:', arc?.name);
+    if (typeof showBriefMessage === 'function') {
+        showBriefMessage(`✅ 已加载存档：${arc?.name}`);
+    }
 }
+
+// 重置地图状态（用于导入/加载前的数据隔离）
+function resetMapStateForImport() {
+    console.log('Resetting map state for import...');
+
+    // 清空选中状态
+    if (typeof selectionManager !== 'undefined' && selectionManager) {
+        selectionManager.clearSelection();
+    }
+
+    // 清空高亮状态
+    if (typeof clearAllHighlights === 'function') {
+        clearAllHighlights();
+    }
+
+    // 清空 MarkerGroupManager
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.clear();
+    }
+
+    // 清空 drawnItems
+    if (typeof drawnItems !== 'undefined') {
+        drawnItems.clearLayers();
+    }
+
+    // 清空自定义组
+    if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+        customGroupManager.groups.clear();
+        customGroupManager.markerToGroups.clear();
+        if (customGroupManager.selectedMarkers) {
+            customGroupManager.selectedMarkers.clear();
+        }
+        customGroupManager._renderGroupList();
+    }
+
+    console.log('Map state reset complete');
+}
+window.resetMapStateForImport = resetMapStateForImport;
 
 // Delete archive
 function deleteArchive(id) {
