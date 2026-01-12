@@ -32,6 +32,21 @@
             </button>
         </div>
 
+        <!-- 时间轴区域 -->
+        <div class="timeline-section">
+            <div class="timeline-header">
+                <h3>📅 时间轴</h3>
+                <button onclick="timelineManager && timelineManager.saveSnapshotPrompt()" title="保存当前状态">
+                    <i class="fa-solid fa-plus"></i> 保存
+                </button>
+            </div>
+            <div id="timelineList" class="timeline-list">
+                <div class="timeline-empty">暂无时间点</div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
         <!-- 基础功能 -->
         <div class="control-group">
             <label for="baseMapSelect">底图选择：</label>
@@ -449,6 +464,24 @@
         <i class="fa-solid fa-table"></i>
     </button>
 
+    <!-- 看板按钮（右下角） -->
+    <button id="openDashboardBtn" class="control-btn floating-btn dashboard-btn" title="数据看板">
+        <i class="fa-solid fa-chart-pie"></i>
+    </button>
+
+    <!-- 看板面板（右上角） -->
+    <div id="dashboardPanel" class="dashboard-panel">
+        <div class="dashboard-header">
+            <h3><i class="fa-solid fa-chart-pie"></i> 数据看板</h3>
+            <button id="closeDashboardBtn" class="btn-close-dashboard" title="关闭">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="dashboardContent" class="dashboard-content">
+            <div class="dashboard-empty">点击右下角按钮打开看板</div>
+        </div>
+    </div>
+
     <!-- 属性编辑器侧边抽屉 -->
     <div id="propertyDrawer" class="property-drawer" style="display:none;">
         <div class="drawer-overlay" onclick="closePropertyDrawer()"></div>
@@ -560,6 +593,10 @@
     <script src="layer-stats.js"></script>
     <!-- Custom Group Manager -->
     <script src="custom-group-manager.js"></script>
+    <!-- Timeline Manager -->
+    <script src="timeline-manager.js"></script>
+    <!-- Dashboard Panel -->
+    <script src="dashboard-panel.js"></script>
     <script src="script.js"></script>
     <script src="property-editor.js"></script>
     <script src="table-view.js"></script>
