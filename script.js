@@ -752,6 +752,9 @@ function bindMarkerPopup(layer) {
 function bindMarkerContextMenu(marker) {
     // 右键：显示上下文菜单并设置为选中标记
     marker.on('contextmenu', e => {
+        L.DomEvent.stopPropagation(e);
+        L.DomEvent.preventDefault(e); // 阻止原生地图右键
+
         contextMenuTarget = marker;
         selectedMarker = marker;  // 设置为选中标记
 
@@ -972,7 +975,8 @@ function deleteSelectedMarker() {
     hideContextMenu();
 }
 
-function openEventTrackerFromMenu() {
+function openEventTrackerFromMenu(e) {
+    if (e) L.DomEvent.stopPropagation(e);
     if (!contextMenuTarget) return;
     openEventTracker(contextMenuTarget);
     hideContextMenu();
@@ -3185,6 +3189,11 @@ function toggleAccordion(sectionId) {
     if (section) {
         section.classList.toggle('collapsed');
     }
+
+    // 如果切换离开历史 Accordion 且在浏览模式，自动退出
+    if (sectionId !== 'history' && typeof exitHistoryBrowseModeSafe === 'function') {
+        exitHistoryBrowseModeSafe();
+    }
 }
 
 function expandAccordion(sectionId) {
@@ -3193,6 +3202,13 @@ function expandAccordion(sectionId) {
     // 先展开面板
     if (controls && controls.classList.contains('collapsed')) {
         controls.classList.remove('collapsed');
+        // 同步 body 类
+        document.body.classList.remove('ui-collapsed');
+    }
+
+    // 如果展开的不是历史 Accordion，且当前在浏览模式，先退出
+    if (sectionId !== 'history' && typeof exitHistoryBrowseModeSafe === 'function') {
+        exitHistoryBrowseModeSafe();
     }
 
     // 展开对应 accordion

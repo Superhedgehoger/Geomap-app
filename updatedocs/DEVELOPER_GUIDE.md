@@ -7,20 +7,24 @@
 ## 项目结构
 
 ```
-map-app/
+Geomap-app/
 ├── index.html              # 主页面
 ├── style.css               # 主样式
-├── script.js               # 核心逻辑（~2750行）
-├── property-editor.js      # 属性编辑器（~310行）
-├── table-view.js           # 表格视图（~280行）
+├── script.js               # 核心逻辑
+├── property-editor.js      # 属性编辑器
+├── table-view.js           # 表格视图
 ├── table-view-styles.css   # 表格样式
+├── timeline-manager.js     # 时间轴快照模块
+├── marker-group.js         # 组合标记模块
+├── selection-manager.js    # 选中状态管理
 ├── server.py               # 本地服务器
-├── README.md               # 用户文档
-├── CHANGELOG.md            # 更新日志
+├── README.md               # GitHub 首页（简洁概述）
+├── CHANGELOG.md            # 唯一权威版本日志
 └── updatedocs/             # 开发文档
-    ├── CHANGELOG.md        # 版本更新日志
     ├── DEVELOPER_GUIDE.md  # 开发者指南（本文档）
-    └── API_REFERENCE.md    # API 参考
+    ├── API_REFERENCE.md    # API 参考
+    ├── DOC_WORKFLOW.md     # 文档维护规则
+    └── ARCHIVE_CHANGELOG.md # 历史存档（已废弃）
 ```
 
 ---
@@ -205,6 +209,7 @@ updateFeatureTable();
 ## 文档维护
 
 每次修复/更新需要同步：
-1. 更新 `updatedocs/CHANGELOG.md`
-2. 更新 `CHANGELOG.md`（根目录）
-3. 必要时更新本开发者指南
+1. 更新根目录 `CHANGELOG.md`（唯一权威日志）
+2. 必要时更新本开发者指南
+3. 必要时更新 `API_REFERENCE.md`
+

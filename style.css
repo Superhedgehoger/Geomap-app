@@ -1211,19 +1211,17 @@ hr.divider {
     z-index: 999 !important;
 }
 
+/* 默认状态：面板展开时，工具栏在面板右侧 */
+/* 面板宽度 280px + 左偏移 16px + 间距 16px = 312px */
 .leaflet-left .leaflet-draw {
-    margin-left: 320px !important;
-    margin-top: 10px !important;
+    margin-left: 312px !important;
+    margin-top: 16px !important;
 }
 
-/* 折叠时恢复默认位置 */
-body.ui-collapsed .leaflet-left .leaflet-draw,
-#controls.collapsed~#map .leaflet-left .leaflet-draw {
-    margin-left: 80px !important;
-}
-
-#controls.collapsed~#map .leaflet-left .leaflet-draw {
-    margin-left: 80px !important;
+/* 折叠状态：使用 body 类选择器 */
+/* 折叠后 Dock 宽度 56px + 左偏移 16px + 间距 16px = 88px */
+body.ui-collapsed .leaflet-left .leaflet-draw {
+    margin-left: 88px !important;
 }
 
 /* Custom Marker Icon Container */
@@ -4604,4 +4602,130 @@ body.selection-mode::before {
     background: rgba(255, 255, 255, 0.05);
     padding: 2px 6px;
     border-radius: 4px;
+}
+
+/* ==== 浏览模式专用样式 ==== */
+
+/* 浏览模式地图遮罩提示 */
+.browse-mode-map-overlay {
+    position: fixed;
+    top: 70px;
+    right: 16px;
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.browse-overlay-content {
+    background: rgba(155, 89, 182, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+}
+
+.browse-overlay-content i {
+    font-size: 1rem;
+}
+
+/* 浏览模式下禁用右键菜单编辑操作 */
+body.browse-mode-active #contextMenu .context-menu-item[onclick*="edit"],
+body.browse-mode-active #contextMenu .context-menu-item[onclick*="delete"],
+body.browse-mode-active #contextMenu .context-menu-item[onclick*="change"] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* 浏览模式下禁用属性抽屉编辑 */
+body.browse-mode-active #propertyDrawer input,
+body.browse-mode-active #propertyDrawer textarea,
+body.browse-mode-active #propertyDrawer select,
+body.browse-mode-active #propertyDrawer button:not(.btn-close) {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* 浏览模式状态条增强样式 */
+.browse-mode-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(142, 68, 173, 0.15));
+    border: 1px solid rgba(155, 89, 182, 0.3);
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.browse-mode-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.browse-mode-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #9b59b6;
+}
+
+.browse-mode-snapshot {
+    font-size: 0.8rem;
+    color: #aaa;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.browse-mode-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.browse-mode-actions button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.browse-mode-actions button:first-child {
+    background: #2ecc71;
+    color: white;
+}
+
+.browse-mode-actions button.exit {
+    background: #e74c3c;
+    color: white;
+}
+
+.browse-mode-actions button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 浏览模式提示 */
+.browse-mode-hint {
+    background: rgba(155, 89, 182, 0.1);
+    border: 1px dashed rgba(155, 89, 182, 0.3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    color: #9b59b6;
+    text-align: center;
 }

@@ -687,35 +687,110 @@ class TimelineManager {
     }
 
     _disableEditControls() {
-        // 禁用绘制控制
+        console.log('Disabling edit controls for browse mode...');
+
+        // 1. 禁用绘制控制工具栏
         const drawControl = document.querySelector('.leaflet-draw');
         if (drawControl) {
             drawControl.style.opacity = '0.3';
             drawControl.style.pointerEvents = 'none';
         }
 
-        // 禁用导入/清空按钮
+        // 2. 禁用导入/清空按钮
         const clearBtn = document.getElementById('clearAllBtn');
         if (clearBtn) clearBtn.disabled = true;
 
         const importBtn = document.querySelector('.import-btn, #importGeoJSONBtn');
         if (importBtn) importBtn.disabled = true;
+
+        // 3. 禁用文件输入
+        const fileInputs = document.querySelectorAll('#geojsonFileInput, #excelFileInput, #coordFileInput');
+        fileInputs.forEach(input => {
+            if (input) input.disabled = true;
+        });
+
+        // 4. 禁用右键菜单中的编辑操作（通过 body 类）
+        document.body.classList.add('browse-mode-active');
+
+        // 5. 关闭属性编辑器抽屉
+        if (typeof closePropertyDrawer === 'function') {
+            closePropertyDrawer();
+        }
+
+        // 6. 清空选择状态
+        if (typeof selectionManager !== 'undefined' && selectionManager) {
+            if (typeof selectionManager.clear === 'function') {
+                selectionManager.clear();
+            } else if (typeof selectionManager.deselect === 'function') {
+                selectionManager.deselect();
+            }
+        }
+
+        // 7. 添加地图浏览模式遮罩提示
+        this._showBrowseModeOverlay();
     }
 
     _enableEditControls() {
-        // 启用绘制控制
+        console.log('Enabling edit controls after browse mode...');
+
+        // 1. 启用绘制控制工具栏
         const drawControl = document.querySelector('.leaflet-draw');
         if (drawControl) {
             drawControl.style.opacity = '1';
             drawControl.style.pointerEvents = 'auto';
         }
 
-        // 启用按钮
+        // 2. 启用按钮
         const clearBtn = document.getElementById('clearAllBtn');
         if (clearBtn) clearBtn.disabled = false;
 
         const importBtn = document.querySelector('.import-btn, #importGeoJSONBtn');
         if (importBtn) importBtn.disabled = false;
+
+        // 3. 启用文件输入
+        const fileInputs = document.querySelectorAll('#geojsonFileInput, #excelFileInput, #coordFileInput');
+        fileInputs.forEach(input => {
+            if (input) input.disabled = false;
+        });
+
+        // 4. 移除浏览模式 body 类
+        document.body.classList.remove('browse-mode-active');
+
+        // 5. 隐藏浏览模式遮罩
+        this._hideBrowseModeOverlay();
+
+        // 6. 确保地图交互正常
+        if (typeof map !== 'undefined') {
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+            map.doubleClickZoom.enable();
+        }
+    }
+
+    // 显示浏览模式地图遮罩提示
+    _showBrowseModeOverlay() {
+        let overlay = document.getElementById('browseModeMapOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'browseModeMapOverlay';
+            overlay.className = 'browse-mode-map-overlay';
+            overlay.innerHTML = `
+                <div class="browse-overlay-content">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>浏览模式 - 只读</span>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        overlay.style.display = 'flex';
+    }
+
+    // 隐藏浏览模式地图遮罩提示
+    _hideBrowseModeOverlay() {
+        const overlay = document.getElementById('browseModeMapOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 }
 
@@ -731,7 +806,33 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineManager = new TimelineManager();
         window.timelineManager = timelineManager;
         console.log('TimelineManager initialized');
+
+        // === ESC 键退出浏览模式 ===
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && timelineManager && timelineManager.isBrowseMode) {
+                console.log('ESC pressed - exiting browse mode');
+                timelineManager.exitBrowseMode();
+            }
+        });
     }, 600);
 });
 
+// === 全局安全退出函数（供外部组件调用） ===
+function exitHistoryBrowseModeSafe() {
+    if (typeof timelineManager !== 'undefined' && timelineManager && timelineManager.isBrowseMode) {
+        console.log('exitHistoryBrowseModeSafe: Exiting browse mode...');
+        timelineManager.exitBrowseMode();
+        return true;
+    }
+    return false;
+}
+window.exitHistoryBrowseModeSafe = exitHistoryBrowseModeSafe;
+
+// === 检查是否在浏览模式 ===
+function isInHistoryBrowseMode() {
+    return typeof timelineManager !== 'undefined' && timelineManager && timelineManager.isBrowseMode;
+}
+window.isInHistoryBrowseMode = isInHistoryBrowseMode;
+
 console.log('Timeline Manager module loaded');
+
