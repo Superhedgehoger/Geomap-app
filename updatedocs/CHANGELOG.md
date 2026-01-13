@@ -4,6 +4,69 @@
 
 ---
 
+## [v2.9.0] - 2026-01-13
+
+### ✨ 新功能
+
+#### 统一悬浮面板系统（Floating Panel System）
+- **毛玻璃效果**：所有面板 `backdrop-filter: blur(14px)` + 半透明背景
+- **统一基类**：`.floating-panel` 基类定义圆角、阴影、边框
+- **CSS 变量**：`--bg-glass`、`--border-glass`、`--shadow-float` 等统一管理
+
+#### 左侧 Dock 折叠模式
+- **图标模式**：折叠后显示 5 个图标（搜索/导入/图层/历史/工具）
+- **Tooltip**：悬停显示功能名称
+- **一键展开**：点击图标展开对应功能模块
+
+#### 图层管理面板升级
+- **固定头部**：标题 + 关闭按钮固定在顶部
+- **搜索栏**：实时过滤图层列表
+- **可折叠分组**：图层列表/图层详情/统计汇总 可独立折叠
+- **滚动列表**：`max-height: 40vh` + `overflow-y: auto`
+
+#### 表格拖拽调节高度
+- **拖拽手柄**：顶部可拖拽调节高度
+- **范围限制**：200px ~ 70vh
+- **地图刷新**：释放后自动 `map.invalidateSize()`
+
+### 🐛 Bug 修复
+
+#### 地图不显示问题
+- **问题**：UI 重构后地图无法显示
+- **原因**：`layer-panel-content` 未正确关闭，`#map` 被嵌套在隐藏的 layerPanel 内
+- **修复**：添加正确的关闭标签并移动 `#map` 到正确位置
+
+#### Dock 图标不可见
+- **问题**：折叠后 Dock 按钮显示为空白
+- **修复**：添加 `.dock-icon i` 显式样式（font-size/color/opacity）
+
+#### Leaflet.draw 图标不可见
+- **问题**：绘制工具按钮是空白方块
+- **原因**：`background:` 简写覆盖了 sprite `background-image`
+- **修复**：改用 `background-color:` 保留 sprite 图标
+
+#### 右下角工具菜单毛玻璃
+- **问题**：背景不透明，blur 无效
+- **修复**：`background: rgba(20,20,20,0.55)` + `backdrop-filter: blur(16px)`
+
+### 🎨 UI 优化
+
+- **缩放控件**：移至左下角，44×44px 点击区域
+- **自定义滚动条**：6px 宽度，透明轨道
+- **按钮系统**：主按钮 `#1677FF`、次按钮描边、文字按钮
+
+### 📁 文件变更
+
+| 文件 | 变更 |
+|------|------|
+| `style.css` | +800 行（悬浮面板、Dock、图层面板、毛玻璃样式） |
+| `index.html` | 重构左侧面板结构、图层面板结构 |
+| `script.js` | 新增 toggleLayerPanel/toggleLayerSection/filterLayers |
+| `table-view.js` | 新增拖拽调节高度功能 |
+| `table-view-styles.css` | 表格面板固定定位 + 拖拽手柄样式 |
+
+---
+
 ## [v2.8.0] - 2026-01-13
 
 ### ✨ 新功能
