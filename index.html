@@ -23,7 +23,7 @@
 </head>
 
 <body>
-    <!-- 左侧控制面板 -->
+    <!-- 左侧悬浮控制面板 -->
     <div id="controls" class="panel">
         <div class="panel-header">
             <h2>地图控制</h2>
@@ -32,132 +32,181 @@
             </button>
         </div>
 
-        <!-- 地图历史区域（原时间轴） -->
-        <div class="timeline-section collapsed" id="mapHistorySection">
-            <div class="timeline-header" onclick="toggleMapHistory()">
-                <h3><i class="fa-solid fa-clock-rotate-left"></i> 历史地图</h3>
-                <div class="timeline-header-actions">
-                    <button onclick="event.stopPropagation(); timelineManager && timelineManager.enterBrowseMode()"
-                        title="浏览模式" class="browse-btn">
-                        <i class="fa-solid fa-eye"></i>
-                    </button>
-                    <button onclick="event.stopPropagation(); timelineManager && timelineManager.saveSnapshotPrompt()"
-                        title="保存当前状态">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+        <!-- Dock 模式图标列表 -->
+        <div class="dock-icons">
+            <div class="dock-icon" data-tooltip="搜索定位" onclick="expandAccordion('search')">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div class="dock-icon" data-tooltip="数据导入导出" onclick="expandAccordion('data')">
+                <i class="fa-solid fa-file-import"></i>
+            </div>
+            <div class="dock-icon" data-tooltip="图层面板" onclick="toggleLayerPanel()">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div class="dock-icon" data-tooltip="历史地图" onclick="expandAccordion('history')">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div class="dock-icon" data-tooltip="高级工具" onclick="expandAccordion('tools')">
+                <i class="fa-solid fa-wrench"></i>
+            </div>
+        </div>
+
+        <!-- 面板内容 -->
+        <div class="panel-content">
+
+            <!-- 搜索与定位（默认展开） -->
+            <div class="accordion-section" id="accordion-search">
+                <div class="accordion-header" onclick="toggleAccordion('search')">
+                    <h3><i class="fa-solid fa-magnifying-glass"></i> 搜索与定位</h3>
                     <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
                 </div>
+                <div class="accordion-content">
+                    <div class="control-group">
+                        <label for="searchAddress">搜索地址</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="searchAddress" placeholder="输入地址关键词..." />
+                            <button id="searchBtn" class="btn-primary"><i class="fa-solid fa-search"></i></button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>坐标定位</label>
+                        <div class="coord-inputs">
+                            <input type="number" id="gotoLat" placeholder="纬度" step="0.000001" class="mono" />
+                            <input type="number" id="gotoLng" placeholder="经度" step="0.000001" class="mono" />
+                        </div>
+                        <button id="gotoCoordBtn" class="btn-primary">
+                            <i class="fa-solid fa-location-crosshairs"></i> 跳转定位
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <label for="baseMapSelect">底图切换</label>
+                        <select id="baseMapSelect">
+                            <option value="osm">OpenStreetMap 标准</option>
+                            <option value="satellite">卫星影像</option>
+                            <option value="dark">暗色主题</option>
+                            <option value="light">浅色主题</option>
+                            <option value="terrain">地形图</option>
+                            <option value="carto">CartoDB 简约</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div id="timelineList" class="timeline-list">
-                <div class="timeline-empty">暂无历史记录</div>
+
+            <!-- 数据导入导出（默认折叠） -->
+            <div class="accordion-section collapsed" id="accordion-data">
+                <div class="accordion-header" onclick="toggleAccordion('data')">
+                    <h3><i class="fa-solid fa-file-import"></i> 数据导入导出</h3>
+                    <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+                </div>
+                <div class="accordion-content">
+                    <div class="control-group btn-row">
+                        <button id="exportGeoJSONBtn" class="btn-primary">
+                            <i class="fa-solid fa-download"></i> 导出 GeoJSON
+                        </button>
+                        <button id="shareBtn" class="btn-secondary">
+                            <i class="fa-solid fa-share-nodes"></i> 分享
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <label for="geojsonFile">导入 GeoJSON</label>
+                        <input type="file" id="geojsonFile" accept=".json,.geojson" />
+                    </div>
+                    <div class="control-group">
+                        <label for="excelFile">导入 Excel</label>
+                        <input type="file" id="excelFile" accept=".xlsx,.xls" />
+                    </div>
+                    <div class="control-group btn-row">
+                        <button id="exportExcelBtn" class="btn-secondary">
+                            <i class="fa-solid fa-file-excel"></i> 导出 Excel
+                        </button>
+                        <button id="downloadTemplateBtn" class="btn-text">
+                            <i class="fa-solid fa-download"></i> 模板
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <label for="coordFile">导入 CSV</label>
+                        <input type="file" id="coordFile" accept=".csv,.txt" />
+                    </div>
+                    <button id="exportBtn" class="btn-secondary">
+                        <i class="fa-solid fa-file-csv"></i> 导出 CSV
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <hr class="divider">
+            <!-- 历史地图（默认折叠） -->
+            <div class="accordion-section collapsed" id="accordion-history">
+                <div class="accordion-header" onclick="toggleAccordion('history')">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> 历史地图</h3>
+                    <div class="accordion-header-actions">
+                        <button onclick="event.stopPropagation(); timelineManager && timelineManager.enterBrowseMode()"
+                            title="浏览模式" class="btn-icon">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button
+                            onclick="event.stopPropagation(); timelineManager && timelineManager.saveSnapshotPrompt()"
+                            title="保存快照" class="btn-icon">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+                    </div>
+                </div>
+                <div class="accordion-content">
+                    <div id="timelineList" class="timeline-list">
+                        <div class="timeline-empty">暂无历史记录</div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- 基础功能 -->
-        <div class="control-group">
-            <label for="baseMapSelect">底图选择：</label>
-            <select id="baseMapSelect">
-                <option value="osm">OpenStreetMap 标准</option>
-                <option value="satellite">卫星影像</option>
-                <option value="dark">暗色主题</option>
-                <option value="light">浅色主题</option>
-                <option value="terrain">地形图</option>
-                <option value="stamen">Stamen 黑白</option>
-                <option value="carto">CartoDB 简约</option>
-            </select>
-        </div>
+            <!-- 高级工具（默认折叠） -->
+            <div class="accordion-section collapsed" id="accordion-tools">
+                <div class="accordion-header" onclick="toggleAccordion('tools')">
+                    <h3><i class="fa-solid fa-wrench"></i> 高级工具</h3>
+                    <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+                </div>
+                <div class="accordion-content">
+                    <div class="control-group">
+                        <button id="togglePickerBtn" class="btn-secondary">
+                            <i class="fa-solid fa-crosshairs"></i> 启用坐标拾取
+                        </button>
+                        <div id="pickedCoords" class="picked-coords mono"></div>
+                    </div>
+                    <div class="control-group">
+                        <label>手动添加标注</label>
+                        <input type="text" id="manualNote" placeholder="输入备注信息" />
+                        <button id="addManualMarkerBtn" class="btn-primary">
+                            <i class="fa-solid fa-map-pin"></i> 点击地图添加
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <button id="toggleEditorBtn" class="btn-secondary">
+                            <i class="fa-solid fa-code"></i> 显示代码编辑器
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <button id="toggleLayerPanelBtn" class="btn-secondary">
+                            <i class="fa-solid fa-layer-group"></i> 显示图层面板
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <label for="markerIconSelect">标记图标样式</label>
+                        <select id="markerIconSelect">
+                            <option value="blue">蓝色标记</option>
+                            <option value="red">红色标记</option>
+                            <option value="green">绿色标记</option>
+                            <option value="orange">橙色标记</option>
+                            <option value="violet">紫色标记</option>
+                            <option value="grey">灰色标记</option>
+                        </select>
+                    </div>
+                    <div class="control-group checkbox-row">
+                        <label>
+                            <input type="checkbox" id="showLabelsCheck" />
+                            显示标注名称
+                        </label>
+                    </div>
+                </div>
+            </div>
 
-        <hr class="divider">
-
-        <!-- GeoJSON 功能 -->
-        <div class="control-group btn-row">
-            <button id="exportGeoJSONBtn">导出 GeoJSON</button>
-            <button id="shareBtn" class="btn-share"><i class="fa-solid fa-share-nodes"></i> 分享</button>
-        </div>
-        <div class="control-group">
-            <label for="geojsonFile">导入 GeoJSON：</label>
-            <input type="file" id="geojsonFile" accept=".json,.geojson" />
-        </div>
-        <div class="control-group">
-            <button id="toggleEditorBtn">显示代码编辑器</button>
-        </div>
-
-        <hr class="divider">
-
-        <!-- 图层面板控制 -->
-        <div class="control-group">
-            <button id="toggleLayerPanelBtn">显示图层面板</button>
-        </div>
-
-        <hr class="divider">
-
-        <!-- Excel/CSV 数据导入导出 -->
-        <div class="control-group">
-            <label>下载导入模板：</label>
-            <button id="downloadTemplateBtn">下载 Excel 模板</button>
-        </div>
-        <div class="control-group">
-            <label for="excelFile">导入 Excel：</label>
-            <input type="file" id="excelFile" accept=".xlsx,.xls" />
-        </div>
-        <div class="control-group">
-            <button id="exportExcelBtn">导出 Excel（完整字段）</button>
-        </div>
-        <div class="control-group">
-            <label for="coordFile">导入 CSV：</label>
-            <input type="file" id="coordFile" accept=".csv,.txt" />
-        </div>
-        <div class="control-group">
-            <button id="exportBtn">导出 CSV（仅坐标）</button>
-        </div>
-
-        <hr class="divider">
-
-        <!-- 工具功能 -->
-        <div class="control-group">
-            <button id="togglePickerBtn">启用坐标拾取</button>
-            <div id="pickedCoords" style="font-size:0.8rem; color:#aaa; margin-top:4px;"></div>
-        </div>
-        <div class="control-group">
-            <label>手动添加标注：</label>
-            <input type="text" id="manualNote" placeholder="输入备注信息" />
-            <button id="addManualMarkerBtn">点击地图添加</button>
-        </div>
-        <div class="control-group">
-            <label for="searchAddress">搜索地址：</label>
-            <input type="text" id="searchAddress" placeholder="输入地址搜索" />
-            <button id="searchBtn">搜索</button>
-        </div>
-        <div class="control-group">
-            <label>输入坐标定位：</label>
-            <input type="number" id="gotoLat" placeholder="纬度" step="0.000001" style="width:100%; margin-bottom:4px;" />
-            <input type="number" id="gotoLng" placeholder="经度" step="0.000001" style="width:100%; margin-bottom:4px;" />
-            <button id="gotoCoordBtn">跳转到中心</button>
-        </div>
-
-        <hr class="divider">
-
-        <!-- 显示选项 -->
-        <div class="control-group">
-            <label for="markerIconSelect">标记图标样式：</label>
-            <select id="markerIconSelect">
-                <option value="blue">蓝色标记</option>
-                <option value="red">红色标记</option>
-                <option value="green">绿色标记</option>
-                <option value="orange">橙色标记</option>
-                <option value="yellow">黄色标记</option>
-                <option value="violet">紫色标记</option>
-                <option value="grey">灰色标记</option>
-                <option value="black">黑色标记</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>
-                <input type="checkbox" id="showLabelsCheck" />
-                显示标注名称
-            </label>
         </div>
     </div>
 
@@ -478,6 +527,7 @@
 
     <!-- 表格视图面板 -->
     <div id="tableViewPanel" class="table-view-panel">
+        <div class="table-drag-handle" id="tableDragHandle"></div>
         <div class="table-header">
             <h3><i class="fa-solid fa-table"></i> 数据表格</h3>
             <div class="table-controls">

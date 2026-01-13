@@ -1,88 +1,258 @@
+/* ==== 全局变量 ==== */
+:root {
+    --primary-color: #1677FF;
+    --primary-hover: #4096ff;
+    --primary-active: #0958d9;
+    --bg-glass: rgba(20, 20, 20, 0.75);
+    --bg-glass-light: rgba(30, 30, 30, 0.85);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --text-primary: #e0e0e0;
+    --text-secondary: #888;
+    --shadow-float: 0 10px 40px rgba(0, 0, 0, 0.35);
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+    --gap-md: 16px;
+    --gap-sm: 8px;
+    --control-height: 36px;
+    --font-mono: 'SF Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
     background-color: #121212;
-    color: #e0e0e0;
+    color: var(--text-primary);
     height: 100vh;
     overflow: hidden;
-
-    /* CSS Grid 布局：实现面板与表格联动 */
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    /* 左面板 | 地图 | 右面板 */
-    grid-template-rows: 1fr auto;
-    /* 主区域 | 底部表格 */
+    position: relative;
 }
 
-/* 左侧控制面板 - 占据第一列，仅在第一行 */
-#controls {
-    grid-row: 1;
-    grid-column: 1;
-}
-
-/* 地图区域 - 占据中间列，仅在第一行 */
+/* ==== 地图全屏 ==== */
 #map {
-    grid-row: 1;
-    grid-column: 2;
-    min-height: 0;
-    /* 修复 Grid 中 flex-grow 问题 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 1;
 }
 
-/* 右侧图层面板 - 占据第三列，仅在第一行 */
-#layerPanel {
-    grid-row: 1;
-    grid-column: 3;
-}
-
-.panel {
-    width: 250px;
-    background: #1e1e1e;
-    padding: 15px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
-    z-index: 2000;
+/* ==== 左侧悬浮控制面板 ==== */
+#controls {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 280px;
+    max-height: calc(100vh - 32px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    z-index: 1000;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-}
-
-#controls {
-    border-right: 1px solid #333;
-    transition: width 0.3s ease, padding 0.3s ease, transform 0.3s ease;
-}
-
-#controls.collapsed {
-    width: 50px;
-    padding: 10px;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-#controls.collapsed .control-group,
-#controls.collapsed .divider,
-#controls.collapsed hr,
-#controls.collapsed .panel-header h2 {
+#controls .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 var(--gap-md) var(--gap-md);
+}
+
+/* Dock 折叠模式 */
+#controls.collapsed {
+    width: 56px;
+    padding: 0;
+}
+
+#controls.collapsed .panel-header h2,
+#controls.collapsed .panel-content,
+#controls.collapsed .accordion-section .accordion-content {
     display: none;
 }
 
 #controls.collapsed .panel-header {
     justify-content: center;
+    padding: var(--gap-sm);
 }
 
 #controls.collapsed .btn-toggle-toolbar i {
     transform: rotate(180deg);
 }
 
+/* Dock 图标列表 */
+#controls.collapsed .dock-icons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+    padding: var(--gap-sm);
+}
+
+#controls:not(.collapsed) .dock-icons {
+    display: none;
+}
+
+.dock-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.dock-icon:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.dock-icon[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1001;
+}
+
+/* ==== 面板头部 ==== */
 .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    padding: var(--gap-md);
+    border-bottom: 1px solid var(--border-glass);
+    flex-shrink: 0;
 }
 
 .panel-header h2 {
     margin: 0;
-    flex-grow: 1;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.btn-toggle-toolbar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-toggle-toolbar:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-toggle-toolbar i {
+    transition: transform 0.3s ease;
+}
+
+/* ==== 右侧图层面板（悬浮卡片） ==== */
+#layerPanel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 300px;
+    max-height: calc(100vh - 32px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#layerPanel.open {
+    display: flex;
+}
+
+/* ==== Accordion 手风琴 ==== */
+.accordion-section {
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.accordion-section:last-child {
+    border-bottom: none;
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px var(--gap-md);
+    cursor: pointer;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.accordion-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.accordion-header h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+}
+
+.accordion-header h3 i {
+    color: var(--primary-color);
+    width: 18px;
+    text-align: center;
+}
+
+.accordion-header .collapse-icon {
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+}
+
+.accordion-section.collapsed .accordion-header .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.accordion-content {
+    padding: 0 var(--gap-md) var(--gap-md);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.accordion-section.collapsed .accordion-content {
+    display: none;
 }
 
 .btn-toggle-toolbar {
@@ -149,72 +319,286 @@ body {
 
 .panel h2 {
     margin-top: 0;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #fff;
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: var(--gap-md);
     font-weight: 600;
     letter-spacing: 0.5px;
 }
 
+/* ==== 控件组样式 ==== */
 .control-group {
-    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
+    gap: var(--gap-sm);
 }
 
 .control-group label {
-    font-size: 0.85rem;
-    margin-bottom: 6px;
-    color: #aaa;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .control-group select,
 .control-group input[type="file"],
 .control-group input[type="number"],
-.control-group input[type="text"],
-.control-group button {
-    padding: 8px 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    outline: none;
-}
-
-.control-group select,
-.control-group input[type="number"],
 .control-group input[type="text"] {
-    background: #2c2c2c;
-    color: #e0e0e0;
-    border: 1px solid #444;
-    transition: border-color 0.2s;
+    height: var(--control-height);
+    padding: 0 12px;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    outline: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    transition: border-color 0.2s, background 0.2s;
 }
 
 .control-group select:focus,
 .control-group input:focus {
-    border-color: #4a90e2;
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.control-group button {
-    background: #4a90e2;
-    color: #fff;
+.control-group input[type="file"] {
+    padding: 8px;
+    height: auto;
+}
+
+/* ==== 按钮系统 ==== */
+/* 主按钮（Primary） */
+.control-group button,
+.btn-primary {
+    height: var(--control-height);
+    padding: 0 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
-    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--primary-color);
+    color: white;
 }
 
-.control-group button:hover {
-    background: #357ab8;
+.control-group button:hover,
+.btn-primary:hover {
+    background: var(--primary-hover);
     transform: translateY(-1px);
 }
 
-.control-group button:active {
+.control-group button:active,
+.btn-primary:active {
+    background: var(--primary-active);
     transform: translateY(0);
 }
 
+/* 次按钮（Secondary / Outline） */
+.btn-secondary,
+.btn-outline {
+    height: var(--control-height);
+    padding: 0 16px;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* 文字按钮（Text） */
+.btn-text {
+    height: var(--control-height);
+    padding: 0 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.btn-text:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+/* 按钮行 */
+.btn-row {
+    flex-direction: row !important;
+    gap: var(--gap-sm);
+}
+
+.btn-row button {
+    flex: 1;
+}
+
+/* Checkbox 样式 */
 .control-group input[type="checkbox"] {
     margin-right: 8px;
     cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+/* 等宽数字 */
+.mono,
+.coordinates,
+.lat-lng {
+    font-family: var(--font-mono);
+}
+
+/* ==== 输入框组合样式 ==== */
+.input-with-btn {
+    display: flex;
+    gap: var(--gap-sm);
+}
+
+.input-with-btn input {
+    flex: 1;
+}
+
+.input-with-btn button {
+    width: var(--control-height);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.coord-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap-sm);
+}
+
+/* 图标按钮 */
+.btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* 拾取的坐标显示 */
+.picked-coords {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    min-height: 20px;
+}
+
+/* Accordion header actions */
+.accordion-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Checkbox 行 */
+.checkbox-row label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* ==== 地图控件重定位到右下角 ==== */
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: var(--shadow-float) !important;
+}
+
+.leaflet-control-zoom a {
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--border-glass) !important;
+    color: var(--text-primary) !important;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    font-size: 18px !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.leaflet-control-zoom-in {
+    border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+}
+
+.leaflet-control-zoom-out {
+    border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+}
+
+/* 隐藏分隔线 */
+.divider,
+hr.divider {
+    display: none;
+}
+
+/* ==== 自定义滚动条 ==== */
+.panel-content::-webkit-scrollbar,
+#layerList::-webkit-scrollbar,
+.accordion-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track,
+#layerList::-webkit-scrollbar-track,
+.accordion-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.panel-content::-webkit-scrollbar-thumb,
+#layerList::-webkit-scrollbar-thumb,
+.accordion-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover,
+#layerList::-webkit-scrollbar-thumb:hover,
+.accordion-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* Layer list items */

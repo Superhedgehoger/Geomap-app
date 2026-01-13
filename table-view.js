@@ -453,5 +453,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 拖拽调整高度
+    initTableDragResize();
+
     console.log('Table view module loaded');
 });
+
+// ==== Table Drag Resize ==== //
+function initTableDragResize() {
+    const handle = document.getElementById('tableDragHandle');
+    const panel = document.getElementById('tableViewPanel');
+
+    if (!handle || !panel) return;
+
+    let isDragging = false;
+    let startY = 0;
+    let startHeight = 0;
+    const minHeight = 200;
+    const maxHeight = window.innerHeight * 0.7;
+
+    handle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startY = e.clientY;
+        startHeight = panel.offsetHeight;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        const deltaY = startY - e.clientY;
+        let newHeight = startHeight + deltaY;
+
+        // 限制高度范围
+        newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+
+        panel.style.height = newHeight + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+
+            // 刷新地图尺寸
+            if (typeof map !== 'undefined') {
+                map.invalidateSize();
+            }
+
+            // 刷新表格
+            if (featureTable) {
+                featureTable.redraw();
+            }
+        }
+    });
+}
+
+window.initTableDragResize = initTableDragResize;

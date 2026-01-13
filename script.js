@@ -3105,13 +3105,36 @@ setTimeout(() => {
     }
 }, 500);
 
-// ==== Map History / Timeline Toggle ==== //
-function toggleMapHistory() {
-    const section = document.getElementById('mapHistorySection');
+// ==== Accordion Toggle Functions ==== //
+function toggleAccordion(sectionId) {
+    const section = document.getElementById(`accordion-${sectionId}`);
     if (section) {
         section.classList.toggle('collapsed');
     }
 }
+
+function expandAccordion(sectionId) {
+    const controls = document.getElementById('controls');
+
+    // 先展开面板
+    if (controls && controls.classList.contains('collapsed')) {
+        controls.classList.remove('collapsed');
+    }
+
+    // 展开对应 accordion
+    const section = document.getElementById(`accordion-${sectionId}`);
+    if (section) {
+        section.classList.remove('collapsed');
+    }
+}
+
+// 保留旧函数兼容
+function toggleMapHistory() {
+    toggleAccordion('history');
+}
+
+window.toggleAccordion = toggleAccordion;
+window.expandAccordion = expandAccordion;
 window.toggleMapHistory = toggleMapHistory;
 
 // ==== Unified Tools Menu ==== //
