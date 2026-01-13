@@ -170,6 +170,22 @@ body {
     z-index: 1001;
 }
 
+/* Dock 图标 FontAwesome 显示确保 */
+.dock-icon i,
+.dock-icon i.fa-solid,
+.dock-icon i.fa-regular {
+    font-size: 18px !important;
+    color: inherit !important;
+    opacity: 1 !important;
+    display: inline-block !important;
+    visibility: visible !important;
+    line-height: 1 !important;
+}
+
+.dock-icon:hover i {
+    color: white !important;
+}
+
 /* ==== 面板头部 ==== */
 .panel-header {
     display: flex;
