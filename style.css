@@ -1170,14 +1170,24 @@ hr.divider {
 
 .leaflet-draw-toolbar a,
 .leaflet-draw-actions a {
+    /* 背景色，不用 background 简写以保留 sprite */
     background-color: rgba(255, 255, 255, 0.9) !important;
     background-repeat: no-repeat !important;
+    background-position: center center !important;
+
+    /* 尺寸 40×40 */
+    width: 40px !important;
+    height: 40px !important;
+
+    /* Flex 居中 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    /* 边框 */
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
     color: #333 !important;
     text-decoration: none !important;
-    width: 36px !important;
-    height: 36px !important;
-    line-height: 36px !important;
 }
 
 .leaflet-draw-toolbar a:hover,
