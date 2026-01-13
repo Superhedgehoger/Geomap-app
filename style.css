@@ -1170,7 +1170,8 @@ hr.divider {
 
 .leaflet-draw-toolbar a,
 .leaflet-draw-actions a {
-    background: rgba(255, 255, 255, 0.9) !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    background-repeat: no-repeat !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
     color: #333 !important;
     text-decoration: none !important;
@@ -1181,13 +1182,13 @@ hr.divider {
 
 .leaflet-draw-toolbar a:hover,
 .leaflet-draw-actions a:hover {
-    background: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
     color: white !important;
 }
 
 /* Disabled state */
 .leaflet-draw-toolbar .leaflet-disabled {
-    background: rgba(200, 200, 200, 0.5) !important;
+    background-color: rgba(200, 200, 200, 0.5) !important;
     border-color: rgba(100, 100, 100, 0.3) !important;
 }
 
