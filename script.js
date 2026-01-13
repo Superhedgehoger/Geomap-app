@@ -5,7 +5,14 @@ const AMAP_API_KEY = 'f9ef1f8a897389df48a43e18ac4660d8';
 const AMAP_GEOCODE_URL = 'https://restapi.amap.com/v3/geocode/geo';
 
 // ==== Initialize Map ==== //
-const map = L.map('map').setView([36.0671, 120.3826], 12); // 青岛市中心
+const map = L.map('map', {
+    zoomControl: false  // 禁用默认位置的缩放控件
+}).setView([36.0671, 120.3826], 12); // 青岛市中心
+
+// 添加缩放控件到左下角
+L.control.zoom({
+    position: 'bottomleft'
+}).addTo(map);
 
 // Base layers - expanded map options
 const baseLayers = {
