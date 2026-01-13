@@ -1096,11 +1096,81 @@ function confirmImport() {
     const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'replace';
 
     if (mode === 'replace') {
-        drawnItems.clearLayers();
+        // ⚠️ 真正的替换模式：彻底清空所有状态后再导入
+        resetImportState();
     }
 
     importGeoJSON(pendingImportData);
+
+    // 刷新所有视图
+    refreshAllViewsAfterImport();
+
     closeImportModal();
+
+    if (typeof showBriefMessage === 'function') {
+        showBriefMessage(mode === 'replace' ? '✅ 已替换现有图层' : '✅ 已合并图层');
+    }
+}
+
+// 导入前彻底清空所有状态（替换模式专用）
+function resetImportState() {
+    console.log('Resetting state for import replace mode...');
+
+    // 1. 清空 MarkerGroupManager（必须在 drawnItems 之前）
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.clear();
+        if (markerGroupManager.coordIndex) {
+            markerGroupManager.coordIndex.clear();
+        }
+        if (markerGroupManager.markerToGroup) {
+            markerGroupManager.markerToGroup.clear();
+        }
+    }
+
+    // 2. 清空 drawnItems
+    if (typeof drawnItems !== 'undefined') {
+        drawnItems.clearLayers();
+    }
+
+    // 3. 清空自定义组
+    if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+        customGroupManager.groups.clear();
+        customGroupManager.markerToGroups.clear();
+        customGroupManager._renderGroupList();
+    }
+
+    // 4. 清空 SelectionManager 状态
+    if (typeof selectionManager !== 'undefined' && selectionManager) {
+        selectionManager.clear();
+    }
+
+    // 5. 清空表格数据
+    if (typeof featureTable !== 'undefined' && featureTable) {
+        featureTable.clearData();
+    }
+
+    console.log('Import state reset complete');
+}
+
+// 导入后刷新所有视图
+function refreshAllViewsAfterImport() {
+    setTimeout(() => {
+        if (typeof updateLayerList === 'function') {
+            updateLayerList();
+        }
+        if (typeof updateFeatureTable === 'function') {
+            updateFeatureTable();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+        if (typeof updateLayerStats === 'function') {
+            updateLayerStats();
+        }
+        if (typeof updateLayerDetailsPanel === 'function') {
+            updateLayerDetailsPanel();
+        }
+    }, 100);
 }
 
 // ==== Share Feature ==== //
@@ -3051,8 +3121,14 @@ function updateLayerDetailsPanel(selectedLayer = null) {
         });
     }
 
-    // 生成 HTML
+    // 生成 HTML - 搜索栏
     let html = `
+        <div class="layer-search-bar">
+            <input type="text" id="layerSearchInput" placeholder="搜索名称/类型/地址..." oninput="filterLayerMarkers(this.value)">
+            <button onclick="clearLayerSearch()" title="清除搜索"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="search-results-container" id="searchResultsContainer" style="display:none;"></div>
+        
         <div class="layer-detail-row">
             <span class="detail-label">图层类型</span>
             <span class="detail-value">Point (标记)</span>
@@ -3069,11 +3145,12 @@ function updateLayerDetailsPanel(selectedLayer = null) {
         ` : ''}
         
         <div class="style-distribution">
-            <div class="distribution-title">样式分布</div>
+            <div class="distribution-title">样式分布 (${sortedStats.length} 种)</div>
+            <div class="style-distribution-scroll">
     `;
 
-    // 最多显示 5 个类型
-    const displayStats = sortedStats.slice(0, 5);
+    // 最多显示 10 个类型（可滚动）
+    const displayStats = sortedStats.slice(0, 10);
     displayStats.forEach(stat => {
         const iconClass = getIconClass(stat.symbol);
         html += `
@@ -3086,11 +3163,11 @@ function updateLayerDetailsPanel(selectedLayer = null) {
         `;
     });
 
-    if (sortedStats.length > 5) {
-        html += `<div class="style-more">还有 ${sortedStats.length - 5} 种类型...</div>`;
+    if (sortedStats.length > 10) {
+        html += `<div class="style-more">还有 ${sortedStats.length - 10} 种类型...</div>`;
     }
 
-    html += `</div>`;
+    html += `</div></div>`;
 
     // 快捷操作
     html += `
@@ -3102,7 +3179,94 @@ function updateLayerDetailsPanel(selectedLayer = null) {
     `;
 
     container.innerHTML = html;
+
+    // 保存标记列表供搜索使用
+    window._layerDetailsMarkers = allMarkers;
 }
+
+// 图层搜索功能
+function filterLayerMarkers(query) {
+    const resultsContainer = document.getElementById('searchResultsContainer');
+    if (!resultsContainer || !window._layerDetailsMarkers) return;
+
+    if (!query || query.trim().length < 2) {
+        resultsContainer.style.display = 'none';
+        return;
+    }
+
+    const lowerQuery = query.toLowerCase().trim();
+    const matches = [];
+
+    window._layerDetailsMarkers.forEach(marker => {
+        const props = marker.feature?.properties || {};
+        const name = (props.名称 || props.name || '').toLowerCase();
+        const type = (props.类型 || props.type || '').toLowerCase();
+        const address = (props.地址 || props.address || '').toLowerCase();
+
+        if (name.includes(lowerQuery) || type.includes(lowerQuery) || address.includes(lowerQuery)) {
+            matches.push({
+                marker,
+                name: props.名称 || props.name || '未命名',
+                type: props.类型 || props.type || '',
+                address: props.地址 || props.address || ''
+            });
+        }
+    });
+
+    if (matches.length === 0) {
+        resultsContainer.innerHTML = '<div class="no-results">无匹配结果</div>';
+        resultsContainer.style.display = 'block';
+        return;
+    }
+
+    // 最多显示 5 个结果
+    const displayMatches = matches.slice(0, 5);
+    let html = '';
+    displayMatches.forEach((match, index) => {
+        html += `
+            <div class="search-result-item" onclick="locateSearchResult(${index})">
+                <span class="result-name">${match.name}</span>
+                <span class="result-type">${match.type}</span>
+            </div>
+        `;
+    });
+
+    if (matches.length > 5) {
+        html += `<div class="result-more">还有 ${matches.length - 5} 个结果...</div>`;
+    }
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+
+    // 保存匹配结果供定位使用
+    window._searchResults = matches;
+}
+
+function locateSearchResult(index) {
+    if (!window._searchResults || !window._searchResults[index]) return;
+
+    const marker = window._searchResults[index].marker;
+    if (typeof locateMarkerOnMap === 'function') {
+        locateMarkerOnMap(marker);
+    }
+
+    // 隐藏搜索结果
+    const resultsContainer = document.getElementById('searchResultsContainer');
+    if (resultsContainer) resultsContainer.style.display = 'none';
+}
+
+function clearLayerSearch() {
+    const input = document.getElementById('layerSearchInput');
+    const resultsContainer = document.getElementById('searchResultsContainer');
+
+    if (input) input.value = '';
+    if (resultsContainer) resultsContainer.style.display = 'none';
+    window._searchResults = null;
+}
+
+window.filterLayerMarkers = filterLayerMarkers;
+window.locateSearchResult = locateSearchResult;
+window.clearLayerSearch = clearLayerSearch;
 
 function getIconClass(symbol) {
     if (typeof MARKER_ICONS !== 'undefined' && MARKER_ICONS[symbol]) {
