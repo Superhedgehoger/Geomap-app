@@ -1170,24 +1170,44 @@ hr.divider {
 
 .leaflet-draw-toolbar a,
 .leaflet-draw-actions a {
-    /* 背景色，不用 background 简写以保留 sprite */
-    background-color: rgba(255, 255, 255, 0.9) !important;
+    /* 尺寸: 内容30px + padding 4px = 38px */
+    width: 38px !important;
+    height: 38px !important;
+    padding: 4px !important;
+    /* 用于居中 Sprite */
+
+    /* 关键设置：让 Sprite 坐标相对于内容框计算 */
+    background-origin: content-box !important;
+    background-clip: content-box !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
     background-repeat: no-repeat !important;
-    background-position: center center !important;
 
-    /* 尺寸 40×40 */
-    width: 40px !important;
-    height: 40px !important;
+    /* 移除 background-position 和 background-size 的强制覆盖 */
 
-    /* Flex 居中 */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-
-    /* 边框 */
+    /* 布局 */
+    display: block !important;
+    position: relative !important;
     border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    color: #333 !important;
-    text-decoration: none !important;
+    border-radius: 4px !important;
+    margin-bottom: 3px !important;
+    box-sizing: border-box !important;
+
+    /* 隐藏文字 */
+    font-size: 0 !important;
+    color: transparent !important;
+    text-indent: -9999px !important;
+    overflow: hidden !important;
+}
+
+/* 隐藏按钮内部的所有子元素及伪元素 */
+.leaflet-draw-toolbar a>*,
+.leaflet-draw-actions a>*,
+.leaflet-draw-toolbar a::before,
+.leaflet-draw-actions a::before,
+.leaflet-draw-toolbar a::after,
+.leaflet-draw-actions a::after {
+    display: none !important;
+    content: none !important;
 }
 
 .leaflet-draw-toolbar a:hover,
@@ -1211,17 +1231,24 @@ hr.divider {
     z-index: 999 !important;
 }
 
-/* 默认状态：面板展开时，工具栏在面板右侧 */
-/* 面板宽度 280px + 左偏移 16px + 间距 16px = 312px */
-.leaflet-left .leaflet-draw {
-    margin-left: 312px !important;
-    margin-top: 16px !important;
+/* 重置 Leaflet 默认的控件容器定位 */
+.leaflet-top.leaflet-left {
+    /* 默认状态：面板展开时 */
+    /* 面板宽度 280px + 左偏移 16px + 间距 16px = 312px */
+    left: 312px !important;
+    top: 16px !important;
 }
 
 /* 折叠状态：使用 body 类选择器 */
 /* 折叠后 Dock 宽度 56px + 左偏移 16px + 间距 16px = 88px */
-body.ui-collapsed .leaflet-left .leaflet-draw {
-    margin-left: 88px !important;
+body.ui-collapsed .leaflet-top.leaflet-left {
+    left: 88px !important;
+}
+
+/* 确保工具栏本身没有额外偏移 */
+.leaflet-left .leaflet-draw {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
 }
 
 /* Custom Marker Icon Container */
@@ -4654,16 +4681,24 @@ body.browse-mode-active #propertyDrawer button:not(.btn-close) {
     pointer-events: none;
 }
 
-/* 浏览模式状态条增强样式 */
+/* 浏览模式状态条 - 左上角悬浮小条 */
 .browse-mode-bar {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(142, 68, 173, 0.15));
-    border: 1px solid rgba(155, 89, 182, 0.3);
-    border-radius: 8px;
-    margin: 10px 0;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(155, 89, 182, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.4);
+    color: white;
+    font-size: 0.85rem;
 }
 
 .browse-mode-info {
@@ -4675,24 +4710,20 @@ body.browse-mode-active #propertyDrawer button:not(.btn-close) {
 .browse-mode-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #9b59b6;
+    color: white;
 }
 
 .browse-mode-snapshot {
     font-size: 0.8rem;
-    color: #aaa;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 10px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 10px;
     border-radius: 12px;
 }
 
-.browse-mode-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.browse-mode-actions button {
-    padding: 6px 12px;
+/* 浏览模式按钮样式 */
+.browse-mode-bar button {
+    padding: 6px 10px;
     border: none;
     border-radius: 6px;
     font-size: 0.8rem;
@@ -4700,21 +4731,22 @@ body.browse-mode-active #propertyDrawer button:not(.btn-close) {
     transition: all 0.2s;
     display: flex;
     align-items: center;
-    gap: 6px;
-}
-
-.browse-mode-actions button:first-child {
-    background: #2ecc71;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.2);
     color: white;
 }
 
-.browse-mode-actions button.exit {
-    background: #e74c3c;
-    color: white;
+.browse-mode-bar button.exit {
+    background: rgba(231, 76, 60, 0.9);
+    padding: 6px 8px;
 }
 
-.browse-mode-actions button:hover {
-    transform: translateY(-1px);
+.browse-mode-bar button.apply {
+    background: rgba(46, 204, 113, 0.9);
+}
+
+.browse-mode-bar button:hover {
+    transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -4728,4 +4760,349 @@ body.browse-mode-active #propertyDrawer button:not(.btn-close) {
     font-size: 0.8rem;
     color: #9b59b6;
     text-align: center;
+}
+
+/* ==== Leaflet.draw 工具栏修复 ==== */
+
+/* 工具栏容器定位 - 避免与左侧面板重叠 */
+.leaflet-top.leaflet-left {
+    left: 310px !important;
+    top: 16px !important;
+    transition: left 0.3s ease;
+}
+
+/* 左侧面板折叠时调整位置 */
+body.ui-collapsed .leaflet-top.leaflet-left {
+    left: 80px !important;
+}
+
+/* 工具栏整体样式 */
+.leaflet-draw.leaflet-control {
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-glass) !important;
+    box-shadow: var(--shadow-float) !important;
+    overflow: hidden;
+    margin: 0 !important;
+}
+
+/* 工具栏按钮 - 修复图标显示 */
+.leaflet-draw-toolbar a,
+.leaflet-draw-actions a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+
+    /* 背景色 - 不使用 background shorthand 以保留 sprite */
+    background-color: transparent !important;
+    background-repeat: no-repeat !important;
+    /* 让 Leaflet.draw 自行设置 background-position */
+
+    /* 图标居中 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border: none !important;
+    border-radius: 0 !important;
+    transition: background-color 0.2s !important;
+}
+
+.leaflet-draw-toolbar a:hover,
+.leaflet-draw-actions a:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 隐藏按钮内的子元素（防止双图标） */
+.leaflet-draw-toolbar a>*,
+.leaflet-draw-actions a>*,
+.leaflet-draw-toolbar a::before,
+.leaflet-draw-actions a::before,
+.leaflet-draw-toolbar a::after,
+.leaflet-draw-actions a::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* 分隔线 */
+.leaflet-draw-toolbar-top {
+    border-bottom: 1px solid var(--border-glass) !important;
+}
+
+/* 动作按钮样式 */
+.leaflet-draw-actions {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+.leaflet-draw-actions a {
+    color: var(--text-primary) !important;
+    font-size: 0.75rem !important;
+    padding: 0 10px !important;
+    width: auto !important;
+}
+
+/* ==== Zoom 控件样式 ==== */
+.leaflet-control-zoom {
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-glass) !important;
+    box-shadow: var(--shadow-float) !important;
+    overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    background: transparent !important;
+    color: var(--text-primary) !important;
+    border: none !important;
+    font-size: 18px !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+.leaflet-control-zoom-in {
+    border-bottom: 1px solid var(--border-glass) !important;
+}
+
+/* ==== 表格定位按钮样式 ==== */
+.table-locate-btn {
+    background: transparent;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-locate-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.table-locate-btn i {
+    font-size: 14px;
+}
+
+/* 表格滚动条增强 */
+#featureTable .tabulator-tableholder {
+    overflow: auto !important;
+}
+
+#featureTable .tabulator-tableholder::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#featureTable .tabulator-tableholder::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#featureTable .tabulator-tableholder::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+#featureTable .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==== 右下角工具菜单毛玻璃 ==== */
+.tools-fab-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.tools-fab {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid var(--border-glass) !important;
+    box-shadow: var(--shadow-float) !important;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s;
+}
+
+.tools-fab:hover {
+    background: var(--primary-color) !important;
+    color: white;
+    transform: scale(1.05);
+}
+
+.tools-menu {
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    background: var(--bg-glass) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-float) !important;
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.tools-menu.open {
+    display: flex;
+}
+
+.tools-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tools-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tools-menu-item i {
+    width: 18px;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+/* ==== 图层面板搜索框样式 ==== */
+.layer-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    margin: 0 var(--gap-md) var(--gap-sm);
+}
+
+.layer-search-box i {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.layer-search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.layer-search-box input::placeholder {
+    color: var(--text-secondary);
+}
+
+.btn-clear-search {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-clear-search:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* 图层列表滚动区域 */
+.layer-list-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.layer-list-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.layer-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.layer-list-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.layer-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ==== backdrop-filter 降级方案 ==== */
+@supports not (backdrop-filter: blur(10px)) {
+
+    .floating-panel,
+    #controls,
+    .leaflet-draw.leaflet-control,
+    .leaflet-control-zoom,
+    .tools-fab,
+    .tools-menu,
+    #layerPanel {
+        background: rgba(30, 30, 40, 0.95) !important;
+    }
+}
+
+/* ==== 图层面板显示/隐藏 ==== */
+.layer-panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 320px;
+    max-height: calc(100vh - 32px);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, opacity 0.2s ease;
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+.layer-panel.open {
+    display: flex;
+    transform: translateX(0);
+    opacity: 1;
 }

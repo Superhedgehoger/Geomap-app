@@ -223,6 +223,16 @@ setTimeout(() => {
     }
 }, 100);
 
+// ==== Initialize Timeline Manager ==== //
+let timelineManager = null;
+setTimeout(() => {
+    if (typeof TimelineManager !== 'undefined') {
+        timelineManager = new TimelineManager();
+        window.timelineManager = timelineManager; // Explicit global export
+        console.log('TimelineManager initialized');
+    }
+}, 100);
+
 L.drawLocal = {
     draw: {
         toolbar: {
@@ -3510,3 +3520,117 @@ window.exportCurrentLayerGeoJSON = exportCurrentLayerGeoJSON;
 setTimeout(() => {
     updateLayerDetailsPanel();
 }, 800);
+
+// ==== Clear All Layers ==== //
+function clearAllLayers() {
+    // 检查是否在浏览模式
+    if (typeof timelineManager !== 'undefined' && timelineManager && timelineManager.isBrowseMode) {
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage('⚠️ 浏览模式下无法清空图层，请先退出');
+        }
+        return;
+    }
+
+    if (!confirm('确定要清空所有图层吗？此操作不可撤销。')) {
+        return;
+    }
+
+    // 清空 MarkerGroupManager
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.clear();
+    }
+
+    // 清空 drawnItems
+    if (typeof drawnItems !== 'undefined') {
+        drawnItems.clearLayers();
+    }
+
+    // 清空自定义组
+    if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+        customGroupManager.groups.clear();
+        customGroupManager.markerToGroups.clear();
+        customGroupManager._renderGroupList();
+    }
+
+    // 清空选择
+    if (typeof selectionManager !== 'undefined' && selectionManager) {
+        selectionManager.clear();
+    }
+
+    // 刷新所有视图
+    updateLayerList();
+
+    if (typeof updateFeatureTable === 'function') {
+        updateFeatureTable();
+    }
+
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
+
+    if (typeof updateLayerStats === 'function') {
+        updateLayerStats();
+    }
+
+    if (typeof updateGeoJSONEditor === 'function') {
+        updateGeoJSONEditor();
+    }
+
+    if (typeof showBriefMessage === 'function') {
+        showBriefMessage('🗑️ 已清空所有图层');
+    }
+
+    console.log('All layers cleared');
+}
+
+window.clearAllLayers = clearAllLayers;
+
+// ==== Tools Menu Toggle ==== //
+function toggleToolsMenu() {
+    const menu = document.getElementById('toolsMenu');
+    if (menu) {
+        menu.classList.toggle('open');
+    }
+}
+
+function closeToolsMenu() {
+    const menu = document.getElementById('toolsMenu');
+    if (menu) {
+        menu.classList.remove('open');
+    }
+}
+
+window.toggleToolsMenu = toggleToolsMenu;
+window.closeToolsMenu = closeToolsMenu;
+
+// 点击外部关闭工具菜单
+document.addEventListener('click', (e) => {
+    const container = document.querySelector('.tools-fab-container');
+    if (container && !container.contains(e.target)) {
+        closeToolsMenu();
+    }
+});
+
+// ==== UI Collapsed State Management ==== //
+function updateUICollapsedState() {
+    const controls = document.getElementById('controls');
+    if (controls && controls.classList.contains('collapsed')) {
+        document.body.classList.add('ui-collapsed');
+    } else {
+        document.body.classList.remove('ui-collapsed');
+    }
+}
+
+// 监听折叠按钮点击
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('toggleToolbarBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const controls = document.getElementById('controls');
+            if (controls) {
+                controls.classList.toggle('collapsed');
+                updateUICollapsedState();
+            }
+        });
+    }
+});

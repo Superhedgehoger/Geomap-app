@@ -183,6 +183,11 @@ class TimelineManager {
 
     // === 快照操作 === //
     saveSnapshot(name) {
+        if (this.isBrowseMode) {
+            alert('🚫 浏览模式下无法保存快照，请先退出或应用快照。');
+            return null;
+        }
+
         const snapshot = Snapshot.createFromCurrentState(name);
         this.snapshots.set(snapshot.snapshotId, snapshot);
         this.currentSnapshotId = snapshot.snapshotId;
@@ -290,7 +295,7 @@ class TimelineManager {
 
         // 4. 清空 SelectionManager 状态
         if (typeof selectionManager !== 'undefined' && selectionManager) {
-            selectionManager.clear();
+            selectionManager.deselect();
         }
 
         // 5. 清空表格数据
@@ -544,9 +549,13 @@ class TimelineManager {
 
         console.log('Entering browse mode...');
 
-        // 保存当前编辑态
-        this.savedEditState = Snapshot.createFromCurrentState('_edit_backup_');
-        console.log('Edit state saved:', this.savedEditState);
+        // 仅在首次进入时保存编辑态（使用深拷贝确保数据隔离）
+        if (!this.savedEditState) {
+            const snapshot = Snapshot.createFromCurrentState('_edit_backup_');
+            // 深拷贝确保数据隔离，避免引用共享导致的串数据问题
+            this.savedEditState = JSON.parse(JSON.stringify(snapshot.toJSON()));
+            console.log('Edit state saved (deep copy):', this.savedEditState);
+        }
 
         this.isBrowseMode = true;
 
@@ -573,37 +582,69 @@ class TimelineManager {
         }
     }
 
-    // 退出浏览模式
-    exitBrowseMode() {
-        if (!this.isBrowseMode) {
+    // 退出浏览模式 (支持强制退出)
+    exitBrowseMode(force = false) {
+        if (!this.isBrowseMode && !force) {
             console.log('Not in browse mode');
             return;
         }
 
-        console.log('Exiting browse mode...');
+        console.log(`Exiting browse mode (force=${force})...`);
 
         // 恢复编辑态
         if (this.savedEditState) {
             console.log('Restoring edit state...');
             this._resetRuntimeState();
 
-            this.savedEditState.layers.forEach(layerData => {
-                if (layerData.geojson && layerData.geojson.features) {
-                    this._importGeoJSON(layerData.geojson);
+            try {
+                this.savedEditState.layers.forEach(layerData => {
+                    if (layerData.geojson && layerData.geojson.features) {
+                        this._importGeoJSON(layerData.geojson);
+                    }
+                });
+
+                if (this.savedEditState.viewState && typeof map !== 'undefined') {
+                    map.setView(this.savedEditState.viewState.center, this.savedEditState.viewState.zoom);
                 }
-            });
 
-            if (this.savedEditState.viewState && typeof map !== 'undefined') {
-                map.setView(this.savedEditState.viewState.center, this.savedEditState.viewState.zoom);
+                // 恢复自定义组
+                if (typeof customGroupManager !== 'undefined' && customGroupManager && this.savedEditState.customGroups) {
+                    setTimeout(() => {
+                        Object.values(this.savedEditState.customGroups).forEach(groupData => {
+                            const group = CustomGroup.fromJSON(groupData);
+                            customGroupManager.groups.set(group.groupId, group);
+                            group.memberIds.forEach(id => {
+                                if (!customGroupManager.markerToGroups.has(id)) {
+                                    customGroupManager.markerToGroups.set(id, new Set());
+                                }
+                                customGroupManager.markerToGroups.get(id).add(group.groupId);
+                            });
+                        });
+                        customGroupManager._renderGroupList();
+                    }, 100);
+                }
+
+                this._refreshAllViews();
+            } catch (e) {
+                console.error('Error restoring edit state:', e);
+                if (typeof showBriefMessage === 'function') {
+                    showBriefMessage('⚠️ 恢复编辑态时发生错误，已重置为安全状态');
+                }
             }
-
-            this._refreshAllViews();
+        } else {
+            console.warn('No saved edit state found. Resetting to empty state.');
+            // 即使没有保存的状态，也要清理当前快照的残留
+            if (force) {
+                this._resetRuntimeState();
+                this._refreshAllViews();
+            }
         }
 
         this.isBrowseMode = false;
         this.savedEditState = null;
+        this.currentSnapshotId = null; // 退出后不选中任何快照
 
-        // 启用编辑控件
+        // 启用编辑控件（这是最重要的步骤，保证不被锁定）
         this._enableEditControls();
 
         // 更新 UI
@@ -642,39 +683,29 @@ class TimelineManager {
         }
     }
 
-    // 渲染浏览模式状态条
+    // 渲染浏览模式状态条（居中悬浮，紧凑设计）
     _renderBrowseModeBar() {
         let bar = document.getElementById('browseModeBar');
         if (!bar) {
             bar = document.createElement('div');
             bar.id = 'browseModeBar';
             bar.className = 'browse-mode-bar';
-
-            const section = document.querySelector('.timeline-section');
-            if (section) {
-                const header = section.querySelector('.timeline-header');
-                if (header) {
-                    header.insertAdjacentElement('afterend', bar);
-                }
-            }
+            document.body.insertBefore(bar, document.body.firstChild);
         }
 
         const currentSnapshot = this.getCurrentSnapshot();
         const snapshotName = currentSnapshot ? currentSnapshot.name : '未选择';
 
+        // 紧凑布局：退出按钮 | 标签 | 快照名 | 应用按钮
         bar.innerHTML = `
-            <div class="browse-mode-info">
-                <span class="browse-mode-label">👁️ 浏览模式</span>
-                <span class="browse-mode-snapshot">${snapshotName}</span>
-            </div>
-            <div class="browse-mode-actions">
-                <button onclick="timelineManager.applyBrowsingSnapshot()" title="应用到编辑态">
-                    <i class="fa-solid fa-check"></i> 应用
-                </button>
-                <button onclick="timelineManager.exitBrowseMode()" class="exit" title="退出浏览模式">
-                    <i class="fa-solid fa-xmark"></i> 退出
-                </button>
-            </div>
+            <button onclick="timelineManager.exitBrowseMode(true)" class="exit" title="退出浏览模式">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <span class="browse-mode-label">👁️ 只读浏览</span>
+            <span class="browse-mode-snapshot">${snapshotName}</span>
+            <button onclick="timelineManager.applyBrowsingSnapshot()" class="apply" title="应用到编辑态">
+                <i class="fa-solid fa-check"></i> 应用
+            </button>
         `;
         bar.style.display = 'flex';
     }
@@ -726,8 +757,8 @@ class TimelineManager {
             }
         }
 
-        // 7. 添加地图浏览模式遮罩提示
-        this._showBrowseModeOverlay();
+        // NOTE: 移除重复的浏览模式遮罩，仅保留顶部操作条作为唯一状态入口
+        // this._showBrowseModeOverlay();
     }
 
     _enableEditControls() {
@@ -797,42 +828,3 @@ class TimelineManager {
 // 全局暴露
 window.Snapshot = Snapshot;
 window.TimelineManager = TimelineManager;
-
-// 初始化
-let timelineManager = null;
-
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        timelineManager = new TimelineManager();
-        window.timelineManager = timelineManager;
-        console.log('TimelineManager initialized');
-
-        // === ESC 键退出浏览模式 ===
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && timelineManager && timelineManager.isBrowseMode) {
-                console.log('ESC pressed - exiting browse mode');
-                timelineManager.exitBrowseMode();
-            }
-        });
-    }, 600);
-});
-
-// === 全局安全退出函数（供外部组件调用） ===
-function exitHistoryBrowseModeSafe() {
-    if (typeof timelineManager !== 'undefined' && timelineManager && timelineManager.isBrowseMode) {
-        console.log('exitHistoryBrowseModeSafe: Exiting browse mode...');
-        timelineManager.exitBrowseMode();
-        return true;
-    }
-    return false;
-}
-window.exitHistoryBrowseModeSafe = exitHistoryBrowseModeSafe;
-
-// === 检查是否在浏览模式 ===
-function isInHistoryBrowseMode() {
-    return typeof timelineManager !== 'undefined' && timelineManager && timelineManager.isBrowseMode;
-}
-window.isInHistoryBrowseMode = isInHistoryBrowseMode;
-
-console.log('Timeline Manager module loaded');
-

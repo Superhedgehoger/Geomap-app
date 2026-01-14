@@ -4,6 +4,30 @@
 
 ---
 
+## [v2.9.2] - 2026-01-14
+
+### 🐛 Bug 修复
+
+#### 浏览模式核心功能修复
+- **快照切换失败**：`_resetRuntimeState()` 中 `selectionManager.clear()` → `selectionManager.deselect()`
+- **X 退出按钮无效**：同上，TypeError 导致函数执行中断
+- **浏览模式 UI 重复**：移除 `_showBrowseModeOverlay()`，仅保留顶部操作条
+
+#### 图层面板无法打开
+- **问题**：事件监听器未正确绑定
+- **修复**：在 HTML 中添加 `onclick="toggleLayerPanel()"`
+- **新增 CSS**：`.layer-panel` 显示/隐藏样式
+
+#### 浏览模式状态条优化
+- **新设计**：居中悬浮小胶囊（非全宽横幅）
+- **布局**：[✕ 退出] [👁️ 只读浏览] [快照名] [✓ 应用]
+- **插入位置**：`document.body` 顶部固定定位
+
+### 📦 代码同步
+- 所有修复同步到 Geomap-app-lite
+
+---
+
 ## [v2.9.1] - 2026-01-13
 
 ### 🐛 Bug 修复
