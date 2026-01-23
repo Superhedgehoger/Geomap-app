@@ -13,6 +13,9 @@
     <!-- Leaflet.draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
         crossorigin="" />
+    <!-- Leaflet.markercluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <!-- Tabulator CSS (dark theme) -->
     <link href="https://unpkg.com/tabulator-tables@5.5/dist/css/tabulator_midnight.min.css" rel="stylesheet">
     <!-- Custom Styles -->
@@ -130,6 +133,17 @@
                     <button id="exportBtn" class="btn-secondary">
                         <i class="fa-solid fa-file-csv"></i> 导出 CSV
                     </button>
+                    <div class="control-group" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                        <button id="clearAllLayersBtn" class="btn-danger" onclick="clearAllLayersWithConfirm()">
+                            <i class="fa-solid fa-trash-can"></i> 清空所有图层
+                        </button>
+                    </div>
+                    <div class="control-group checkbox-row" style="margin-top: 8px;">
+                        <label>
+                            <input type="checkbox" id="enableClusterCheck" onchange="toggleClusterMode(this.checked)" />
+                            启用点聚合
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -196,6 +210,22 @@
                             <option value="orange">橙色标记</option>
                             <option value="violet">紫色标记</option>
                             <option value="grey">灰色标记</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="basemapSelect">底图选择</label>
+                        <select id="basemapSelect" onchange="switchBaseLayer(this.value)">
+                            <optgroup label="国际通用">
+                                <option value="osm" selected>OpenStreetMap</option>
+                                <option value="satellite">卫星影像 (Esri)</option>
+                                <option value="dark">暗色主题 (CartoDB)</option>
+                                <option value="light">亮色主题 (CartoDB)</option>
+                                <option value="terrain">地形图 (OpenTopo)</option>
+                            </optgroup>
+                            <optgroup label="中国底图">
+                                <option value="amap">高德地图</option>
+                                <option value="amapSatellite">高德卫星</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="control-group checkbox-row">
@@ -694,6 +724,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Leaflet.draw JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" crossorigin=""></script>
+    <!-- Leaflet.markercluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
         crossorigin="anonymous"></script>

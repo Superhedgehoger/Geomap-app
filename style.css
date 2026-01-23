@@ -5106,3 +5106,83 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     transform: translateX(0);
     opacity: 1;
 }
+/* ==== Marker Clustering Styles ==== */
+/* 聚合点样式 - 与项目整体风格一致 */
+
+.marker-cluster-custom {
+    background: transparent;
+}
+
+.cluster-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.cluster-icon:hover {
+    transform: scale(1.1);
+}
+
+/* 小聚合点 (< 100) */
+.cluster-small {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6ec857 0%, #4cae34 100%);
+    font-size: 13px;
+}
+
+/* 中聚合点 (100-499) */
+.cluster-medium {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #f5a623 0%, #e0910b 100%);
+    font-size: 14px;
+}
+
+/* 大聚合点 (500+) */
+.cluster-large {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    font-size: 15px;
+}
+
+/* 覆盖默认 MarkerCluster 样式 */
+.marker-cluster-custom .cluster-icon span {
+    display: block;
+}
+
+
+/* ==== 危险按钮样式 ==== */
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+

@@ -4,6 +4,14 @@
 const AMAP_API_KEY = 'f9ef1f8a897389df48a43e18ac4660d8';
 const AMAP_GEOCODE_URL = 'https://restapi.amap.com/v3/geocode/geo';
 
+// ==== 底图服务 API Key（需自行申请填入）==== //
+// 高德地图 Web 服务 Key（用于底图瓦片）
+const AMAP_MAP_KEY = '';
+// 腾讯地图 Key
+const TENCENT_MAP_KEY = '';
+// 天地图 Token（需在 https://console.tianditu.gov.cn/ 注册）
+const TIANDITU_TOKEN = '';
+
 // ==== Initialize Map ==== //
 const map = L.map('map', {
     zoomControl: false  // 禁用默认位置的缩放控件
@@ -14,8 +22,11 @@ L.control.zoom({
     position: 'bottomleft'
 }).addTo(map);
 
-// Base layers - expanded map options
+// ==== Base Layers Configuration ==== //
+// 底图配置（支持 OSM、卫星图、CartoDB、高德、腾讯、天地图等）
+// 注意：高德/腾讯使用 GCJ-02 坐标系，与 WGS-84 有偏移
 const baseLayers = {
+    // === 国际通用底图 === //
     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
@@ -36,16 +47,62 @@ const baseLayers = {
         attribution: '&copy; OpenTopoMap',
         maxZoom: 17,
     }),
-    stamen: L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
-        attribution: '&copy; Stamen Design',
-        maxZoom: 20,
+
+    // === 中国底图服务（GCJ-02 坐标系）=== //
+    // 高德地图 - 标准地图
+    amap: L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+        subdomains: ['1', '2', '3', '4'],
+        maxZoom: 18,
+        attribution: '© 高德地图'
     }),
-    carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CartoDB',
-        maxZoom: 19,
+    // 高德地图 - 卫星图
+    amapSatellite: L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
+        subdomains: ['1', '2', '3', '4'],
+        maxZoom: 18,
+        attribution: '© 高德地图'
     }),
+    // 腾讯地图 - 标准地图（使用 TMS 标准，y 轴翻转）
+    tencent: L.tileLayer('https://rt{s}.map.gtimg.com/tile?z={z}&x={x}&y={reverseY}&type=vector&styleid=0', {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 18,
+        attribution: '© 腾讯地图'
+    }),
+    // 天地图 - 矢量底图（WGS-84 坐标系，国产标准）
+    tianditu: L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=' + (TIANDITU_TOKEN || 'your_token'), {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        maxZoom: 18,
+        attribution: '© 天地图'
+    }),
+    // 天地图 - 影像底图
+    tiandituSatellite: L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=' + (TIANDITU_TOKEN || 'your_token'), {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        maxZoom: 18,
+        attribution: '© 天地图'
+    })
 };
-baseLayers.osm.addTo(map);
+
+// 当前底图（默认 OSM）
+let currentBaseLayer = baseLayers.osm;
+currentBaseLayer.addTo(map);
+
+// 底图切换函数
+function switchBaseLayer(layerKey) {
+    if (!baseLayers[layerKey]) {
+        console.warn('未知的底图类型:', layerKey);
+        return;
+    }
+    // 移除当前底图
+    if (currentBaseLayer) {
+        map.removeLayer(currentBaseLayer);
+    }
+    // 添加新底图
+    currentBaseLayer = baseLayers[layerKey];
+    currentBaseLayer.addTo(map);
+    // 确保底图在最底层
+    currentBaseLayer.bringToBack();
+    console.log('已切换底图:', layerKey);
+}
+window.switchBaseLayer = switchBaseLayer;
 
 
 // ==== FontAwesome Icon Marker System ==== //
@@ -212,6 +269,124 @@ function getMarkerIcon(properties) {
 // ==== Leaflet.draw Setup ==== //
 const drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
+
+// ==== Marker Clustering Setup ==== //
+// 使用 Leaflet.markercluster 实现标记聚合
+// 当聚合数量 >= 500 时显示 "500+"
+// 默认关闭，用户可通过复选框开启
+let clusterEnabled = false;  // 聚合功能开关（默认关闭）
+
+const markerClusterGroup = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 60,  // 聚合半径（像素），调小以提高缩放后分离速度
+    spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 16,  // 在此缩放级别停止聚合（调低以便更早分离）
+    chunkedLoading: true,  // 分块加载，提升大数据量性能
+    animate: true,
+    animateAddingMarkers: false,  // 禁用添加动画提升性能
+
+    // 自定义聚合图标（实现 500+ 显示逻辑）
+    iconCreateFunction: function (cluster) {
+        const count = cluster.getChildCount();
+        // 500+ 显示逻辑
+        const displayCount = count >= 500 ? '500+' : count.toString();
+
+        // 根据数量确定大小样式
+        let sizeClass = 'cluster-small';
+        let size = 40;
+        if (count >= 100 && count < 500) {
+            sizeClass = 'cluster-medium';
+            size = 50;
+        } else if (count >= 500) {
+            sizeClass = 'cluster-large';
+            size = 60;
+        }
+
+        return L.divIcon({
+            html: `<div class="cluster-icon ${sizeClass}"><span>${displayCount}</span></div>`,
+            className: 'marker-cluster-custom',
+            iconSize: L.point(size, size)
+        });
+    }
+});
+// 默认不添加到地图（关闭状态）
+// map.addLayer(markerClusterGroup);
+
+// 全局暴露聚合组，供其他模块使用
+window.markerClusterGroup = markerClusterGroup;
+
+// ==== 聚合模式切换函数 ==== //
+function toggleClusterMode(enabled) {
+    clusterEnabled = enabled;
+
+    if (enabled) {
+        // 开启聚合：将现有标记从 drawnItems 移动到 cluster
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markerClusterGroup.addLayer(layer);
+            }
+        });
+        // 移除 drawnItems 中的标记（非标记保留）
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                drawnItems.removeLayer(layer);
+            }
+        });
+        map.addLayer(markerClusterGroup);
+        showBriefMessage('✅ 点聚合已开启');
+    } else {
+        // 关闭聚合：将标记从 cluster 移回 drawnItems
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                drawnItems.addLayer(layer);
+            }
+        });
+        markerClusterGroup.clearLayers();
+        map.removeLayer(markerClusterGroup);
+        showBriefMessage('ℹ️ 点聚合已关闭');
+    }
+
+    updateLayerList();
+    console.log('Cluster mode:', enabled ? 'ON' : 'OFF');
+}
+window.toggleClusterMode = toggleClusterMode;
+
+// ==== 清空所有图层函数 ==== //
+function clearAllLayersWithConfirm() {
+    const layerCount = drawnItems.getLayers().length + markerClusterGroup.getLayers().length;
+    if (layerCount === 0) {
+        showBriefMessage('ℹ️ 当前没有图层可清空');
+        return;
+    }
+
+    if (confirm(`确定要清空所有 ${layerCount} 个图层吗？此操作不可撤销。`)) {
+        clearAllLayers();
+    }
+}
+window.clearAllLayersWithConfirm = clearAllLayersWithConfirm;
+
+function clearAllLayers() {
+    // 清空聚合层
+    markerClusterGroup.clearLayers();
+
+    // 清空 drawnItems
+    drawnItems.clearLayers();
+
+    // 清空 MarkerGroupManager
+    if (markerGroupManager) {
+        markerGroupManager.clear();
+    }
+
+    // 更新 UI
+    updateLayerList();
+    if (typeof updateFeatureTable === 'function') {
+        updateFeatureTable();
+    }
+
+    showBriefMessage('🗑️ 已清空所有图层');
+    console.log('All layers cleared');
+}
+window.clearAllLayers = clearAllLayers;
 
 // ==== Initialize Marker Group Manager ==== //
 let markerGroupManager = null;
@@ -688,11 +863,10 @@ function importGeoJSON(raw) {
                     bindMarkerPopup(layer);
                     bindMarkerContextMenu(layer);
 
-                    // Register with MarkerGroupManager for grouping
-                    if (markerGroupManager) {
-                        markerGroupManager.addMarker(layer);
+                    // 根据聚合开关决定添加位置
+                    if (clusterEnabled && typeof markerClusterGroup !== 'undefined') {
+                        markerClusterGroup.addLayer(layer);
                     } else {
-                        // Fallback if manager not ready
                         drawnItems.addLayer(layer);
                     }
                 } else {
