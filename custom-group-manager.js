@@ -111,6 +111,11 @@ class CustomGroupManager {
         this.selectedMarkers.clear();
         document.body.classList.add('selection-mode');
 
+        // 禁用地图 boxZoom（防止冲突）
+        if (typeof map !== 'undefined' && map.boxZoom) {
+            map.boxZoom.disable();
+        }
+
         // 更新 UI
         const btn = document.getElementById('enterSelectionModeBtn');
         if (btn) {
@@ -122,8 +127,275 @@ class CustomGroupManager {
         const finishBtn = document.getElementById('finishSelectionBtn');
         if (finishBtn) finishBtn.style.display = 'block';
 
+        // 初始化框选
+        this._initBoxSelection();
+
+        // 绑定键盘事件
+        this._bindKeyboardEvents();
+
+        // 绑定标记点击事件
+        this._bindMarkerClicks();
+
         this._updateSelectionCount();
         console.log('Entered selection mode');
+
+        // 创建或显示选择模式提示条
+        this._showSelectionHint();
+
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage('✅ 已进入选择模式，点击标记选中');
+        }
+    }
+
+    _showSelectionHint() {
+        let hint = document.getElementById('selectionModeHint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'selectionModeHint';
+            hint.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(74, 144, 226, 0.95);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                font-size: 0.9rem;
+                font-weight: 500;
+            `;
+            document.body.appendChild(hint);
+        }
+
+        hint.innerHTML = `
+            <i class="fa-solid fa-hand-pointer"></i>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-weight: 600;">
+                    <span id="selectionCountInline" style="color: #2ecc71; margin-right: 8px; display: none;"></span>
+                    <span>点击选单个 | Ctrl+点击多选 | Shift+拖动框选 | ESC取消</span>
+                </div>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 8px;">
+                <button onclick="customGroupManager.exitSelectionMode()" 
+                    style="padding: 6px 14px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fa-solid fa-times"></i> 取消
+                </button>
+                <button onclick="customGroupManager.finishSelectionAndCreateGroup()" 
+                    style="padding: 6px 14px; background: #2ecc71; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fa-solid fa-check"></i> 完成创建
+                </button>
+            </div>
+        `;
+        hint.style.display = 'flex';
+    }
+
+    _hideSelectionHint() {
+        const hint = document.getElementById('selectionModeHint');
+        if (hint) hint.style.display = 'none';
+    }
+
+    // === 框选功能 === //
+    _initBoxSelection() {
+        this._boxSelectionLayer = null;
+        this._isBoxSelecting = false;
+        this._boxStartLatLng = null;
+
+        // 绑定地图鼠标事件
+        this._boxStartHandler = this._onBoxStart.bind(this);
+        this._boxMoveHandler = this._onBoxMove.bind(this);
+        this._boxEndHandler = this._onBoxEnd.bind(this);
+
+        map.on('mousedown', this._boxStartHandler);
+        map.on('mousemove', this._boxMoveHandler);
+        map.on('mouseup', this._boxEndHandler);
+    }
+
+    _onBoxStart(e) {
+        // 仅在按住 Shift 且在选择模式时启动框选
+        if (!this.selectionMode || !e.originalEvent.shiftKey) return;
+
+        L.DomEvent.preventDefault(e.originalEvent);
+        this._isBoxSelecting = true;
+        this._boxStartLatLng = e.latlng;
+
+        // 创建选区矩形（视觉反馈）
+        this._boxSelectionLayer = L.rectangle([e.latlng, e.latlng], {
+            color: '#4a90e2',
+            weight: 2,
+            fillColor: '#4a90e2',
+            fillOpacity: 0.1,
+            dashArray: '5, 5'
+        }).addTo(map);
+    }
+
+    _onBoxMove(e) {
+        if (!this._isBoxSelecting) return;
+
+        // 更新矩形范围（实时显示选区）
+        const bounds = L.latLngBounds(this._boxStartLatLng, e.latlng);
+        this._boxSelectionLayer.setBounds(bounds);
+    }
+
+    _onBoxEnd(e) {
+        if (!this._isBoxSelecting) return;
+
+        const bounds = L.latLngBounds(this._boxStartLatLng, e.latlng);
+
+        // 选中范围内的所有标记
+        this._selectMarkersInBounds(bounds);
+
+        // 清理选区矩形
+        if (this._boxSelectionLayer) {
+            map.removeLayer(this._boxSelectionLayer);
+            this._boxSelectionLayer = null;
+        }
+        this._isBoxSelecting = false;
+        this._boxStartLatLng = null;
+    }
+
+    _selectMarkersInBounds(bounds) {
+        const selectMarker = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+            if (marker._isGroupMarker) return; // 跳过组标记
+
+            if (bounds.contains(marker.getLatLng())) {
+                if (!this.selectedMarkers.has(marker)) {
+                    this.selectedMarkers.add(marker);
+                    this._addSelectionHighlight(marker);
+                }
+            }
+        };
+
+        // 遍历所有标记容器
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(selectMarker);
+        }
+        if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+            markerClusterGroup.eachLayer(selectMarker);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(selectMarker);
+            });
+        }
+
+        this._updateSelectionCount();
+    }
+
+    _cleanupBoxSelection() {
+        if (this._boxSelectionLayer) {
+            map.removeLayer(this._boxSelectionLayer);
+            this._boxSelectionLayer = null;
+        }
+
+        // 解绑事件
+        if (this._boxStartHandler) {
+            map.off('mousedown', this._boxStartHandler);
+            map.off('mousemove', this._boxMoveHandler);
+            map.off('mouseup', this._boxEndHandler);
+        }
+    }
+
+    // === 键盘事件 === //
+    _bindKeyboardEvents() {
+        this._escHandler = (e) => {
+            if (e.key === 'Escape' && this.selectionMode) {
+                this.exitSelectionMode();
+            }
+        };
+        document.addEventListener('keydown', this._escHandler);
+    }
+
+    _unbindKeyboardEvents() {
+        if (this._escHandler) {
+            document.removeEventListener('keydown', this._escHandler);
+            this._escHandler = null;
+        }
+    }
+
+    // 绑定所有标记的点击事件
+    _bindMarkerClicks() {
+        const self = this;
+
+        const bindHandler = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+
+            // 保存原始点击处理器
+            if (!marker._originalClickHandlers) {
+                marker._originalClickHandlers = marker._events?.click?.slice() || [];
+            }
+
+            // 添加选择模式点击处理器
+            marker._groupSelectionHandler = function (e) {
+                if (self.selectionMode) {
+                    L.DomEvent.stopPropagation(e);
+
+                    // Ctrl/Cmd 键：切换选中（多选）
+                    if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+                        self.toggleMarkerSelection(marker);
+                    } else {
+                        // 普通点击：清空其他，仅选当前（单选）
+                        self.selectedMarkers.forEach(m => {
+                            if (m !== marker) self._removeSelectionHighlight(m);
+                        });
+                        self.selectedMarkers.clear();
+                        self.selectedMarkers.add(marker);
+                        self._addSelectionHighlight(marker);
+                        self._updateSelectionCount();
+                    }
+                }
+            };
+            marker.on('click', marker._groupSelectionHandler);
+        };
+
+        // 绑定 drawnItems 中的标记
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(bindHandler);
+        }
+
+        // 绑定 markerClusterGroup 中的标记
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(bindHandler);
+        }
+
+        // 绑定 markerGroupManager 中的标记
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(bindHandler);
+            });
+        }
+    }
+
+    // 解绑标记点击事件
+    _unbindMarkerClicks() {
+        const unbindHandler = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+
+            // 移除选择模式处理器
+            if (marker._groupSelectionHandler) {
+                marker.off('click', marker._groupSelectionHandler);
+                delete marker._groupSelectionHandler;
+            }
+        };
+
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(unbindHandler);
+        }
+
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(unbindHandler);
+        }
+
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(unbindHandler);
+            });
+        }
     }
 
     exitSelectionMode() {
@@ -131,12 +403,36 @@ class CustomGroupManager {
         this.selectedMarkers.clear();
         document.body.classList.remove('selection-mode');
 
+        // 恢复地图 boxZoom
+        if (typeof map !== 'undefined' && map.boxZoom) {
+            map.boxZoom.enable();
+        }
+
+        // 清理框选事件
+        this._cleanupBoxSelection();
+
+        // 解绑键盘事件
+        this._unbindKeyboardEvents();
+
+        // 解绑标记点击事件
+        this._unbindMarkerClicks();
+
         // 清除所有标记的选中态
+        const clearHighlights = (layer) => {
+            if (layer instanceof L.Marker) {
+                this._removeSelectionHighlight(layer);
+            }
+        };
+
         if (typeof drawnItems !== 'undefined') {
-            drawnItems.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
-                    this._removeSelectionHighlight(layer);
-                }
+            drawnItems.eachLayer(clearHighlights);
+        }
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(clearHighlights);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(clearHighlights);
             });
         }
 
@@ -152,6 +448,9 @@ class CustomGroupManager {
 
         const countSpan = document.getElementById('selectionCount');
         if (countSpan) countSpan.style.display = 'none';
+
+        // 隐藏提示条
+        this._hideSelectionHint();
 
         console.log('Exited selection mode');
     }
@@ -201,10 +500,20 @@ class CustomGroupManager {
     }
 
     _updateSelectionCount() {
+        const count = this.selectedMarkers.size;
+        const countText = `已选 ${count}`;
+
         const countSpan = document.getElementById('selectionCount');
         if (countSpan) {
-            countSpan.textContent = `已选择 ${this.selectedMarkers.size} 个标记`;
-            countSpan.style.display = this.selectedMarkers.size > 0 ? 'block' : 'none';
+            countSpan.textContent = countText;
+            countSpan.style.display = count > 0 ? 'block' : 'none';
+        }
+
+        // 更新提示条中的计数
+        const inlineCount = document.getElementById('selectionCountInline');
+        if (inlineCount) {
+            inlineCount.textContent = count > 0 ? countText : '';
+            inlineCount.style.display = count > 0 ? 'inline-block' : 'none';
         }
     }
 
@@ -251,6 +560,22 @@ class CustomGroupManager {
 
         console.log(`Created group "${groupName}" with ${group.getCount()} members`);
         return group;
+    }
+
+    // 完成选择并创建组（带提示）
+    finishSelectionAndCreateGroup() {
+        if (this.selectedMarkers.size === 0) {
+            alert('请先选择至少一个标记');
+            return;
+        }
+
+        const groupName = prompt(`请输入组名称（已选择 ${this.selectedMarkers.size} 个标记）：`, `自定义组 ${this.groups.size + 1}`);
+        if (groupName && groupName.trim()) {
+            this.createGroup(groupName.trim());
+            if (typeof showBriefMessage === 'function') {
+                showBriefMessage(`✅ 已创建组：${groupName}`);
+            }
+        }
     }
 
     deleteGroup(groupId) {

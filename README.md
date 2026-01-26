@@ -44,6 +44,7 @@ Geomap-app/
 ├── property-editor.js      # 属性编辑器
 ├── server.py               # 本地服务器
 └── updatedocs/             # 开发文档
+    ├── PRODUCT_PLAN_P0.md  # 产品规划与 P0 优先级
     ├── API_REFERENCE.md    # API 参考
     ├── DEVELOPER_GUIDE.md  # 开发指南
     └── DOC_WORKFLOW.md     # 文档维护规则

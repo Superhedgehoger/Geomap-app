@@ -5186,3 +5186,548 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     transform: translateY(0);
 }
 
+
+/* ==== 隐藏图层样式 ==== */
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* ==== 样式编辑器面板 ==== */
+.layer-style-editor {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.style-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.style-row label {
+    flex: 0 0 80px;
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.style-row input[type="color"] {
+    width: 40px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+}
+
+.style-row input[type="range"] {
+    flex: 1;
+    accent-color: #4a90e2;
+}
+
+.style-row input[type="number"] {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.style-value {
+    min-width: 40px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+
+/* ==== 图层列表项样式 ==== */
+.layer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.layer-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-item.selected {
+    background: rgba(74, 144, 226, 0.2);
+    border-left: 3px solid #4a90e2;
+}
+
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* 图层主按钮 */
+.layer-btn-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    padding: 4px;
+    min-width: 0;
+}
+
+.layer-btn-main:hover {
+    color: #4a90e2;
+}
+
+.layer-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.layer-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.layer-type {
+    font-size: 0.7rem;
+    color: #888;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+
+.event-badge {
+    background: #e24a4a;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+/* 图层操作按钮容器 */
+.layer-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.layer-item:hover .layer-actions {
+    opacity: 1;
+}
+
+/* 图层操作按钮 */
+.layer-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 4px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.layer-btn:hover {
+    background: rgba(74, 144, 226, 0.3);
+    color: #4a90e2;
+}
+
+.layer-btn.delete:hover {
+    background: rgba(226, 74, 74, 0.3);
+    color: #e24a4a;
+}
+
+/* ==== 事件追踪器面板 ==== */
+#eventTrackerPanel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 400px;
+    max-height: calc(100vh - 32px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    z-index: 1100;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#eventTrackerPanel[style*="flex"] {
+    display: flex !important;
+}
+
+#eventTrackerPanel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventTrackerPanel .panel-header h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+#eventListView {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#eventListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.event-card {
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.event-card:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.btn-add-event {
+    padding: 10px;
+    background: rgba(74, 144, 226, 0.2);
+    border: 1px dashed rgba(74, 144, 226, 0.5);
+    border-radius: 8px;
+    color: #4a90e2;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-event:hover {
+    background: rgba(74, 144, 226, 0.3);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 24px;
+    color: #888;
+}
+
+
+/* ==== 事件追踪器面板 ==== */
+#eventTrackerPanel {
+    position: fixed;
+    top: 16px;
+    left: 320px;
+    width: 400px;
+    max-height: calc(100vh - 32px);
+    z-index: 1001;
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#eventTrackerPanel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventTrackerPanel .panel-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #4a90e2;
+}
+
+#eventTrackerPanel .panel-header button {
+    padding: 6px 12px;
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 6px;
+    color: #ff6b6b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#eventTrackerPanel .panel-header button:hover {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+#eventTrackerFeatureName {
+    padding: 10px 16px;
+    margin: 0;
+    background: rgba(74, 144, 226, 0.1);
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventListView,
+#eventEditView {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+#eventListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.event-card {
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.event-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #4a90e2;
+}
+
+.btn-add-event {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.tracker-section {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+.tracker-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: #4a90e2;
+}
+
+.edit-view-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.edit-view-header .btn-back {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.edit-view-header input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+}
+
+
+/* UI Updates */
+.layer-btn.active {
+    color: var(--primary-color);
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.disabled-by-cluster {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Browse Mode UI Locks */
+body.browse-mode-active .layer-actions {
+    display: none !important;
+}
+
+/* Layer Group Styles */
+.layer-group-header {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-glass);
+    font-weight: 500;
+    user-select: none;
+}
+.layer-group-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.layer-group-content {
+    padding-left: 0;
+}
+.layer-group-content .layer-item {
+    padding-left: 20px;
+    border-left: 2px solid transparent;
+}
+.layer-group-content .layer-item:hover {
+     border-left-color: var(--primary-color);
+}
+
+
+/* Selection Mode Visual Feedback */
+body.selection-mode {
+    cursor: crosshair;
+}
+
+body.selection-mode .map-container::before {
+    content: '🎯 选择模式已激活 - 点击标记进行选择';
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74, 158, 255, 0.95);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.marker-pin.selection-highlight {
+    filter: drop-shadow(0 0 8px #4a9eff) brightness(1.3);
+    transform: scale(1.15);
+    transition: all 0.2s;
+}
+
+
+/* Selection Mode Fixes */
+body.selection-mode {
+    cursor: crosshair;
+}
+
+/* 确保选择模式下标记仍可点击 */
+body.selection-mode .leaflet-marker-icon {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+body.selection-mode .custom-marker-icon {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* 选中高亮效果 */
+.selection-highlight {
+    filter: drop-shadow(0 0 8px #4a90e2) brightness(1.2);
+    transform: scale(1.15);
+    transition: all 0.2s ease;
+}
+
+/* 选择计数器样式 */
+#selectionCount {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74, 144, 226, 0.95);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 10000;
+    font-size: 0.9rem;
+}
+
+
+/* Layer Hidden State */
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Custom Group Selection Mode */
+body.selection-mode * {
+    cursor: crosshair !important;
+}
+.selection-highlight .marker-pin {
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.6) !important;
+    transform: scale(1.15);
+    transition: all 0.2s;
+}
+

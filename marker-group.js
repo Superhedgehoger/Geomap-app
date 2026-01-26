@@ -328,6 +328,51 @@ class MarkerGroupManager {
         });
     }
 
+    // 启用管理器
+    enable() {
+        if (this.enabled) return;
+        this.enabled = true;
+        console.log('MarkerGroupManager enabled, rescanning layers...');
+
+        // 重新扫描 drawnItems 中的标记
+        if (this.drawnItems) {
+            this.drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    this.addMarker(layer);
+                }
+            });
+        }
+    }
+
+    // 禁用管理器
+    disable() {
+        if (!this.enabled) return;
+        this.enabled = false;
+        console.log('MarkerGroupManager disabled, restoring markers...');
+
+        // 恢复所有因分组而被隐藏的标记
+        this.groups.forEach(group => {
+            // Remove group marker
+            group.removeGroupMarker(this.map);
+            group.clearSpiderLegs(this.map);
+
+            // Show all child markers
+            group.markers.forEach(m => {
+                if (m._groupOriginalLatLng) {
+                    m.setLatLng(m._groupOriginalLatLng);
+                }
+                // 确保标记在地图上可见（如果它还在 drawnItems 中）
+                if (!this.map.hasLayer(m) && this.drawnItems.hasLayer(m)) {
+                    this.map.addLayer(m);
+                }
+            });
+        });
+
+        // 清空内部状态
+        this.groups.clear();
+        this.markerToGroup.clear();
+    }
+
     // 添加标记到管理器
     addMarker(marker) {
         if (!this.enabled) return;

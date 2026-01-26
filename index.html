@@ -57,6 +57,24 @@
         <!-- 面板内容 -->
         <div class="panel-content">
 
+            <!-- 主要操作区（置顶） -->
+            <div class="primary-actions-group"
+                style="padding: 0 12px 12px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;">
+                <button id="toggleLayerPanelBtn" class="btn-primary" onclick="toggleLayerPanel()"
+                    style="width:100%; margin-bottom: 8px;">
+                    <i class="fa-solid fa-layer-group"></i> 显示图层面板
+                </button>
+                <button id="clearAllLayersBtn" class="btn-danger" onclick="clearAllLayersWithConfirm()"
+                    style="width:100%; margin-bottom: 8px;">
+                    <i class="fa-solid fa-trash-can"></i> 清空所有图层
+                </button>
+                <button id="toggleClusterBtn" class="btn-secondary" onclick="toggleClusterMode(!clusterEnabled)"
+                    style="width:100%; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-circle-nodes"></i> 点聚合</span>
+                    <span id="clusterStatusText" style="font-size: 0.8rem; opacity: 0.8;">关闭</span>
+                </button>
+            </div>
+
             <!-- 搜索与定位（默认展开） -->
             <div class="accordion-section" id="accordion-search">
                 <div class="accordion-header" onclick="toggleAccordion('search')">
@@ -133,17 +151,7 @@
                     <button id="exportBtn" class="btn-secondary">
                         <i class="fa-solid fa-file-csv"></i> 导出 CSV
                     </button>
-                    <div class="control-group" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
-                        <button id="clearAllLayersBtn" class="btn-danger" onclick="clearAllLayersWithConfirm()">
-                            <i class="fa-solid fa-trash-can"></i> 清空所有图层
-                        </button>
-                    </div>
-                    <div class="control-group checkbox-row" style="margin-top: 8px;">
-                        <label>
-                            <input type="checkbox" id="enableClusterCheck" onchange="toggleClusterMode(this.checked)" />
-                            启用点聚合
-                        </label>
-                    </div>
+
                 </div>
             </div>
 
@@ -197,9 +205,7 @@
                         </button>
                     </div>
                     <div class="control-group">
-                        <button id="toggleLayerPanelBtn" class="btn-secondary" onclick="toggleLayerPanel()">
-                            <i class="fa-solid fa-layer-group"></i> 显示图层面板
-                        </button>
+
                     </div>
                     <div class="control-group">
                         <label for="markerIconSelect">标记图标样式</label>
@@ -272,6 +278,13 @@
                 </div>
                 <div class="layer-section-content">
                     <div id="layerList" class="layer-list-scroll"></div>
+                    <!-- 底部清空按钮 -->
+                    <div style="padding: 12px; border-top: 1px solid var(--border-glass);">
+                        <button class="btn-danger" onclick="clearAllLayersWithConfirm()"
+                            style="width:100%; font-size: 0.9rem;">
+                            <i class="fa-solid fa-trash-can"></i> 清除所有图层
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -286,6 +299,16 @@
                         <div id="layerDetailsContent" class="layer-details-content">
                             <div class="no-selection">点击图层查看详情</div>
                         </div>
+                    </div>
+                    <!-- 简易透明度控制 -->
+                    <div id="layerOpacityControl" class="layer-opacity-control"
+                        style="display:none; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #ccc;">
+                            透明度:
+                            <input type="range" id="layerOpacitySlider" min="0" max="1" step="0.1" value="0.6"
+                                style="flex:1;">
+                            <span id="layerOpacityValue">0.6</span>
+                        </label>
                     </div>
                 </div>
             </div>

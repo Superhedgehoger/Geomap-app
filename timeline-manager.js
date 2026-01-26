@@ -406,6 +406,36 @@ class TimelineManager {
         return true;
     }
 
+    duplicateSnapshot(snapshotId) {
+        const source = this.snapshots.get(snapshotId);
+        if (!source) return false;
+
+        const newName = `${source.name} (副本)`;
+        const newSnapshot = new Snapshot(newName);
+        // Snapshot constructor automatically generates new ID
+
+        // Deep copy data
+        if (source.layers) {
+            newSnapshot.layers = JSON.parse(JSON.stringify(source.layers));
+        }
+        if (source.customGroups) {
+            newSnapshot.customGroups = JSON.parse(JSON.stringify(source.customGroups));
+        }
+        if (source.viewState) {
+            newSnapshot.viewState = { ...source.viewState };
+        }
+
+        this.snapshots.set(newSnapshot.snapshotId, newSnapshot);
+        this._saveToStorage();
+        this._renderTimelineUI();
+
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage(`✅ 已创建副本：${newName}`);
+        }
+
+        return true;
+    }
+
     renameSnapshot(snapshotId, newName) {
         const snapshot = this.snapshots.get(snapshotId);
         if (!snapshot) return false;
@@ -473,6 +503,9 @@ class TimelineManager {
                     <div class="timeline-actions">
                         <button onclick="event.stopPropagation(); timelineManager.renameSnapshotPrompt('${snapshot.snapshotId}')" title="重命名">
                             <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); timelineManager.duplicateSnapshot('${snapshot.snapshotId}')" title="创建副本">
+                            <i class="fa-solid fa-copy"></i>
                         </button>
                         <button onclick="event.stopPropagation(); timelineManager.deleteSnapshot('${snapshot.snapshotId}')" title="删除" class="delete">
                             <i class="fa-solid fa-trash"></i>

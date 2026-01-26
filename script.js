@@ -316,11 +316,43 @@ const markerClusterGroup = L.markerClusterGroup({
 window.markerClusterGroup = markerClusterGroup;
 
 // ==== 聚合模式切换函数 ==== //
+// 全局分组模式状态
+let activeGroupingMode = 'marker-group'; // 'none', 'marker-group', 'cluster'
+window.activeGroupingMode = activeGroupingMode;
+// 隐藏的图层集合
+const hiddenLayers = new Set();
+window.hiddenLayers = hiddenLayers;
+
+// ==== 聚合模式切换函数 ==== //
 function toggleClusterMode(enabled) {
+    const checkEl = document.getElementById('enableClusterCheck');
+
+    // 检查与标记组的互斥冲突
+    if (enabled && activeGroupingMode === 'marker-group') {
+        const confirmMsg = '启用点聚合后，将关闭并禁用当前的『标记组（相近标记自动成组）』功能，二者无法同时使用。\n\n是否继续？';
+        if (!confirm(confirmMsg)) {
+            // 用户取消，无额外操作（因为按钮点击逻辑由调用者控制，或者我们需要手动重置 UI？）
+            // 实际上由于是 toggleClusterMode(!current) 调用，如果取消，状态应保持原样
+            return;
+        }
+    }
+
     clusterEnabled = enabled;
 
     if (enabled) {
-        // 开启聚合：将现有标记从 drawnItems 移动到 cluster
+        // == 切换到点聚合模式 ==
+        activeGroupingMode = 'cluster';
+
+        // 1. 禁用自动标记组管理器
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.disable();
+        }
+
+        // 2. 禁用标记组 UI
+        toggleMarkerGroupUI(false);
+
+        // 3. 执行点聚合逻辑
+        // 将现有标记从 drawnItems 移动到 cluster
         drawnItems.eachLayer(layer => {
             if (layer instanceof L.Marker) {
                 markerClusterGroup.addLayer(layer);
@@ -333,9 +365,13 @@ function toggleClusterMode(enabled) {
             }
         });
         map.addLayer(markerClusterGroup);
-        showBriefMessage('✅ 点聚合已开启');
+        showBriefMessage('✅ 点聚合已开启 (标记组已禁用)');
     } else {
-        // 关闭聚合：将标记从 cluster 移回 drawnItems
+        // == 关闭点聚合模式 ==
+        // 恢复为标记组模式（默认）
+        activeGroupingMode = 'marker-group';
+
+        // 1. 恢复标记到 drawnItems
         markerClusterGroup.eachLayer(layer => {
             if (layer instanceof L.Marker) {
                 drawnItems.addLayer(layer);
@@ -343,11 +379,76 @@ function toggleClusterMode(enabled) {
         });
         markerClusterGroup.clearLayers();
         map.removeLayer(markerClusterGroup);
-        showBriefMessage('ℹ️ 点聚合已关闭');
+
+        // 2. 启用自动标记组管理器
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.enable();
+        }
+
+        // 3. 启用标记组 UI
+        toggleMarkerGroupUI(true);
+
+        showBriefMessage('ℹ️ 点聚合已关闭 (标记组已恢复)');
+    }
+
+    // 更新按钮状态
+    const btn = document.getElementById('toggleClusterBtn');
+    const statusText = document.getElementById('clusterStatusText');
+    if (btn && statusText) {
+        if (enabled) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary'); // 开启时高亮
+            statusText.textContent = '已开启';
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary'); // 关闭时普通
+            statusText.textContent = '关闭';
+        }
     }
 
     updateLayerList();
-    console.log('Cluster mode:', enabled ? 'ON' : 'OFF');
+    console.log('Grouping Mode:', activeGroupingMode);
+}
+
+// 切换标记组 UI 的可用状态
+function toggleMarkerGroupUI(enabled) {
+    const btn = document.getElementById('enterSelectionModeBtn');
+    const section = document.querySelector('.custom-group-section');
+    const finishBtn = document.getElementById('finishSelectionBtn');
+
+    // 如果正在选择模式中且被禁用，强制退出选择模式
+    if (!enabled && typeof customGroupManager !== 'undefined' && customGroupManager.isSelectionMode) {
+        customGroupManager.exitSelectionMode();
+        if (finishBtn) finishBtn.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+    }
+
+    if (btn) {
+        btn.disabled = !enabled;
+        if (!enabled) {
+            btn.title = "当前已启用点聚合功能，标记组功能暂时不可用";
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            // 添加禁用类以便 CSS 处理
+            btn.classList.add('disabled-by-cluster');
+        } else {
+            btn.title = "";
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+            btn.classList.remove('disabled-by-cluster');
+        }
+    }
+
+    // 整个区域视觉反馈
+    if (section) {
+        if (!enabled) {
+            section.style.opacity = '0.6';
+            section.style.pointerEvents = 'none'; // 禁止交互
+        } else {
+            section.style.opacity = '';
+            section.style.pointerEvents = '';
+        }
+    }
 }
 window.toggleClusterMode = toggleClusterMode;
 
@@ -375,6 +476,11 @@ function clearAllLayers() {
     // 清空 MarkerGroupManager
     if (markerGroupManager) {
         markerGroupManager.clear();
+    }
+
+    // 清空隐藏图层
+    if (hiddenLayers) {
+        hiddenLayers.clear();
     }
 
     // 更新 UI
@@ -618,25 +724,63 @@ updateSlotOptions();
 // ==== Helper Functions ==== //
 function updateLayerList() {
     layerList.innerHTML = '';
-    let index = 0;
     const processedLayers = new Set();
+    const groupedLayers = new Map(); // groupId -> [layers]
+    const uncategorizedLayers = [];
+    let totalCount = 0;
 
-    // 处理单个图层的函数
-    const processLayer = (layer) => {
-        if (layer._isGroupMarker) return; // 跳过组合标记
+    // Helper: Collect layers into groups
+    const collectLayer = (layer) => {
+        if (layer._isGroupMarker) return;
         if (processedLayers.has(layer)) return;
         processedLayers.add(layer);
+        totalCount++;
 
+        let assigned = false;
+        if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+            const groupIds = customGroupManager.markerToGroups.get(L.stamp(layer));
+            if (groupIds && groupIds.size > 0) {
+                groupIds.forEach(gid => {
+                    if (!groupedLayers.has(gid)) groupedLayers.set(gid, []);
+                    groupedLayers.get(gid).push(layer);
+                });
+                assigned = true;
+            }
+        }
+
+        if (!assigned) {
+            uncategorizedLayers.push(layer);
+        }
+    };
+
+    // Iterate all sources
+    drawnItems.eachLayer(collectLayer);
+    hiddenLayers.forEach(collectLayer);
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(g => g.markers.forEach(collectLayer));
+    }
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) collectLayer(layer);
+        });
+    }
+
+    // Helper: Render Single Layer Item
+    const renderLayerItem = (layer, container, index) => {
         const item = document.createElement('div');
         item.className = 'layer-item';
-        item.dataset.layerId = L.stamp(layer);
+        const layerId = L.stamp(layer);
+        item.dataset.layerId = layerId;
 
-        // 检查是否为当前选中
+        // selection check
         if (typeof selectionManager !== 'undefined' && selectionManager.isSelected(layer)) {
             item.classList.add('selected');
         }
+        if (layer._hidden) {
+            item.classList.add('layer-hidden');
+        }
 
-        // Determine type and icon
+        // Determine type/icon
         let type, iconClass;
         if (layer instanceof L.Marker) {
             type = '标记';
@@ -660,40 +804,118 @@ function updateLayerList() {
         }
 
         const props = layer.feature?.properties || {};
-        const name = props.名称 || props.name || layer.options.name || `${type} ${index + 1}`;
-        const color = props['marker-color'] || '#4a90e2';
+        const name = props.名称 || props.name || layer.options.name || `${type} ${index}`;
+        const color = props['marker-color'] || props.stroke || '#4a90e2';
 
-        // Get event count for markers
         const events = props.events || [];
         const eventBadge = layer instanceof L.Marker && events.length > 0
             ? `<span class="event-badge">${events.length}</span>`
             : '';
+        const eyeIcon = layer._hidden ? 'fa-eye-slash' : 'fa-eye';
+
+        // opacity
+        let currentOpacity = 1;
+        if (layer instanceof L.Marker) {
+            currentOpacity = layer.options.opacity !== undefined ? layer.options.opacity : 1;
+        } else {
+            currentOpacity = layer.options.fillOpacity !== undefined ? layer.options.fillOpacity : 0.6;
+        }
 
         item.innerHTML = `
-            <button class="layer-btn-main" onclick="focusOnLayer(${L.stamp(layer)})" title="点击定位到此图层">
+            <button class="layer-btn-main" data-action="focus" data-id="${layerId}" title="点击定位">
                 <span class="layer-icon" style="color: ${color}"><i class="${iconClass}"></i></span>
                 <span class="layer-name">${name}</span>
                 ${eventBadge}
                 <span class="layer-type">${type}</span>
             </button>
             <div class="layer-actions">
-                <button class="layer-btn" onclick="toggleLayerVisibility(${L.stamp(layer)})" title="隐藏/显示"><i class="fa-solid fa-eye"></i></button>
-                <button class="layer-btn" onclick="renameLayer(${L.stamp(layer)})" title="重命名"><i class="fa-solid fa-pen"></i></button>
-                <button class="layer-btn delete" onclick="deleteLayer(${L.stamp(layer)})" title="删除"><i class="fa-solid fa-trash"></i></button>
+                <button class="layer-btn" data-action="toggle" data-id="${layerId}" title="显隐"><i class="fa-solid ${eyeIcon}"></i></button>
+                <button class="layer-btn" data-action="opacity-toggle" data-id="${layerId}" title="透明度"><i class="fa-solid fa-sliders"></i></button>
+                <button class="layer-btn delete" data-action="delete" data-id="${layerId}" title="删除"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="layer-opacity-row" id="opacity-row-${layerId}" style="display:none; padding: 4px 12px; background: rgba(0,0,0,0.2); border-radius: 4px; margin-top: 4px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                     <i class="fa-solid fa-circle-half-stroke" style="font-size:0.8rem; opacity:0.7;"></i>
+                     <input type="range" class="opacity-slider" data-id="${layerId}" min="0" max="1" step="0.1" value="${currentOpacity}" style="flex:1; height:4px; cursor:pointer;">
+                     <span class="opacity-value" style="font-size:0.75rem; width:24px; text-align:right;">${currentOpacity}</span>
+                </div>
             </div>
         `;
-        layerList.appendChild(item);
-        index++;
+        container.appendChild(item);
     };
 
-    // 处理 drawnItems 中的图层
-    drawnItems.eachLayer(processLayer);
+    let itemIndex = 1;
 
-    // 处理分组中的标记（可能不在 drawnItems 中）
-    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
-        markerGroupManager.groups.forEach(group => {
-            group.markers.forEach(processLayer);
+    // 1. Render Groups
+    if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+        customGroupManager.groups.forEach((group, gid) => {
+            const layers = groupedLayers.get(gid) || [];
+            // Show group even if empty? User might want to see empty groups to drag into.
+            // But drag-drop not supported yet. So hide if empty for now, OR show empty folder.
+
+            const header = document.createElement('div');
+            header.className = 'layer-group-header';
+            header.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid ${group.expanded ? 'fa-folder-open' : 'fa-folder'}" style="color:${group.color}"></i>
+                    <span>${group.groupName}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="badge">${layers.length}</span>
+                    <i class="fa-solid ${group.expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" style="font-size:0.8rem; opacity:0.6;"></i>
+                </div>
+            `;
+            header.onclick = () => {
+                group.expanded = !group.expanded;
+                updateLayerList(); // Refresh
+                // Persist expansion state in manager? Manager handles local storage on updates.
+                // We should theoretically trigger save?
+                // For performance, maybe not every click.
+            };
+            layerList.appendChild(header);
+
+            if (group.expanded) {
+                const content = document.createElement('div');
+                content.className = 'layer-group-content';
+                if (layers.length === 0) {
+                    content.innerHTML = '<div style="padding:8px 0 8px 30px; color:#aaa; font-style:italic; font-size:0.8rem;">(空组)</div>';
+                } else {
+                    layers.forEach(l => renderLayerItem(l, content, itemIndex++));
+                }
+                layerList.appendChild(content);
+            }
         });
+    }
+
+    // 2. Render Uncategorized
+    const showHeaderForUncategorized = groupedLayers.size > 0;
+    if (showHeaderForUncategorized && uncategorizedLayers.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'layer-group-header';
+        header.style.opacity = '0.7';
+        header.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-layer-group"></i> <span>未分组</span>
+            </div>
+            <span class="badge">${uncategorizedLayers.length}</span>
+        `;
+        // Uncategorized always expanded or collapsible?
+        // Let's make it static or default expanded.
+        layerList.appendChild(header);
+
+        const content = document.createElement('div');
+        content.className = 'layer-group-content';
+        uncategorizedLayers.forEach(l => renderLayerItem(l, content, itemIndex++));
+        layerList.appendChild(content);
+    } else {
+        // Flat list (no groups created yet)
+        uncategorizedLayers.forEach(l => renderLayerItem(l, layerList, itemIndex++));
+    }
+
+    // 更新图层数量显示
+    const layerCountEl = document.getElementById('layerCount');
+    if (layerCountEl) {
+        layerCountEl.textContent = totalCount;
     }
 
     updateGeoJSONEditor();
@@ -703,6 +925,92 @@ function updateLayerList() {
         updateLayerStats();
     }
 }
+
+// 图层列表事件委托处理
+document.addEventListener('DOMContentLoaded', () => {
+    const layerListEl = document.getElementById('layerList');
+    if (layerListEl) {
+        // 点击事件：处理按钮
+        layerListEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+
+            // 如果是 opacity-slider 触发的点击，不要阻止冒泡（可能影响拖拽？）
+            // 但这里主要处理 button [data-action]
+
+            const action = btn.dataset.action;
+            const id = parseInt(btn.dataset.id, 10);
+
+            // 阻止冒泡，避免触发 focus
+            e.preventDefault();
+            e.stopPropagation();
+
+            switch (action) {
+                case 'focus':
+                    focusOnLayer(id);
+                    break;
+                case 'toggle':
+                    toggleLayerVisibility(id);
+                    break;
+                case 'delete':
+                    if (confirm('确定删除此图层？此操作不可恢复。')) {
+                        deleteLayer(id);
+                    }
+                    break;
+                case 'opacity-toggle':
+                    const row = document.getElementById(`opacity-row-${id}`);
+                    if (row) {
+                        const isHidden = row.style.display === 'none';
+                        row.style.display = isHidden ? 'block' : 'none';
+                        // 切换按钮高亮状态
+                        if (isHidden) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    }
+                    break;
+            }
+        });
+
+        // 输入事件：处理透明度滑块
+        layerListEl.addEventListener('input', (e) => {
+            if (e.target.classList.contains('opacity-slider')) {
+                const id = parseInt(e.target.dataset.id, 10);
+                const value = parseFloat(e.target.value);
+                const valueSpan = e.target.nextElementSibling;
+                if (valueSpan) valueSpan.textContent = value;
+
+                const layer = drawnItems.getLayer(id) || (typeof markerClusterGroup !== 'undefined' ? markerClusterGroup.getLayer(id) : null);
+                // 也要在 MarkerGroupManager 中找
+                let targetLayer = layer;
+                if (!targetLayer && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+                    for (const [m, group] of markerGroupManager.markerToGroup) {
+                        if (L.stamp(m) === id) {
+                            targetLayer = m;
+                            break;
+                        }
+                    }
+                }
+
+                if (targetLayer) {
+                    if (targetLayer instanceof L.Marker) {
+                        targetLayer.setOpacity(value);
+                        // 保存到 props
+                        if (!targetLayer.feature) targetLayer.feature = { properties: {} };
+                        targetLayer.feature.properties.opacity = value;
+                        targetLayer.options.opacity = value;
+                    } else if (targetLayer.setStyle) {
+                        targetLayer.setStyle({ fillOpacity: value, opacity: value });
+                        targetLayer.options.fillOpacity = value;
+                        targetLayer.options.opacity = value;
+                        // 保存到 props
+                        if (!targetLayer.feature) targetLayer.feature = { properties: {} };
+                        targetLayer.feature.properties['fill-opacity'] = value;
+                        targetLayer.feature.properties['stroke-opacity'] = value;
+                    }
+                }
+            }
+        });
+    }
+});
 
 // Focus map on a specific layer
 function focusOnLayer(leafletId) {
@@ -737,11 +1045,197 @@ function focusOnLayer(leafletId) {
         if (typeof openPropertyDrawer === 'function') {
             openPropertyDrawer(layer);
         }
+        // 隐藏透明度控制（标记不需要）
+        const opacityControl = document.getElementById('layerOpacityControl');
+        if (opacityControl) opacityControl.style.display = 'none';
     } else if (layer.getBounds) {
         map.fitBounds(layer.getBounds());
+        // 显示透明度控制
+        showOpacityControl(layer);
     }
 }
 
+// 显示透明度控制并绑定事件 (Moved to later section)
+
+// 透明度滑块事件
+document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('layerOpacitySlider');
+    const valueSpan = document.getElementById('layerOpacityValue');
+
+    if (slider) {
+        slider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (valueSpan) valueSpan.textContent = value;
+
+            if (currentOpacityLayer && currentOpacityLayer.setStyle) {
+                currentOpacityLayer.setStyle({
+                    fillOpacity: value,
+                    opacity: value
+                });
+            }
+        });
+    }
+});
+
+
+// ==== Layer Management Actions ==== //
+
+// Helper to find layer by ID in all containers
+function findLayerById(id) {
+    if (!id) return null;
+
+    // 1. drawnItems
+    let layer = drawnItems.getLayer(id);
+    if (layer) return { layer, container: drawnItems, type: 'drawnItems' };
+
+    // 2. hiddenLayers
+    for (const l of hiddenLayers) {
+        if (L.stamp(l) === id) return { layer: l, container: hiddenLayers, type: 'hidden' };
+    }
+
+    // 3. markerGroupManager
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        for (const [marker, group] of markerGroupManager.markerToGroup) {
+            if (L.stamp(marker) === id) {
+                return { layer: marker, container: markerGroupManager, type: 'markerGroup', group };
+            }
+        }
+    }
+
+    // 4. markerClusterGroup
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        layer = markerClusterGroup.getLayer(id);
+        if (layer) return { layer, container: markerClusterGroup, type: 'cluster' };
+    }
+
+    return null;
+}
+
+// Global Toggle Visibility Function
+function toggleLayerVisibility(leafletId) {
+    const result = findLayerById(leafletId);
+    if (!result) {
+        console.warn('Layer not found for visibility toggle:', leafletId);
+        return;
+    }
+
+    const { layer, container, type } = result;
+
+    // Toggle hidden state
+    layer._hidden = !layer._hidden;
+
+    if (layer._hidden) {
+        // Hide: Remove from map/container, add to hiddenLayers
+        if (type === 'drawnItems') {
+            drawnItems.removeLayer(layer);
+        } else if (type === 'cluster') {
+            markerClusterGroup.removeLayer(layer);
+        } else if (type === 'markerGroup') {
+            if (map.hasLayer(layer)) map.removeLayer(layer);
+        }
+
+        hiddenLayers.add(layer);
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+
+    } else {
+        // Show: Remove from hiddenLayers, add back to container
+        hiddenLayers.delete(layer);
+
+        if (type === 'drawnItems' || type === 'hidden') {
+            drawnItems.addLayer(layer);
+        } else if (type === 'cluster') {
+            markerClusterGroup.addLayer(layer);
+        }
+
+        if (layer instanceof L.Marker) {
+            layer.setOpacity(layer.options.opacity || 1);
+            layer.setInteractive(true);
+        }
+    }
+
+    updateLayerList();
+}
+window.toggleLayerVisibility = toggleLayerVisibility;
+
+// Global Delete Function
+function deleteLayer(leafletId) {
+    const result = findLayerById(leafletId);
+    if (!result) {
+        console.warn('Layer not found for deletion:', leafletId);
+        return;
+    }
+
+    const { layer, container, type, group } = result;
+
+    // Remove from everywhere
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+    if (hiddenLayers.has(layer)) hiddenLayers.delete(layer);
+
+    if (container === drawnItems) {
+        drawnItems.removeLayer(layer);
+    } else if (container === markerClusterGroup) {
+        if (markerClusterGroup.hasLayer(layer)) markerClusterGroup.removeLayer(layer);
+    } else if (type === 'markerGroup') {
+        if (group) {
+            const idx = group.markers.indexOf(layer);
+            if (idx > -1) group.markers.splice(idx, 1);
+            markerGroupManager.markerToGroup.delete(layer);
+            group.updateGroupMarker(map, drawnItems); // Refresh group
+        }
+    }
+
+    updateLayerList();
+
+    if (typeof updateFeatureTable === 'function') updateFeatureTable();
+    if (typeof updateLayerStats === 'function') updateLayerStats();
+
+    showBriefMessage('🗑️ 图层已删除');
+}
+window.deleteLayer = deleteLayer;
+
+// ==== Automated Test ==== //
+window.runAutomatedTest = async () => {
+    console.log('%c ==== Starting Automated Test ==== ', 'background: #222; color: #bada55');
+
+    const m1 = L.marker([39.9, 116.4], { title: 'Test1' }).addTo(drawnItems);
+    m1.feature = { properties: { name: 'Test1' } };
+    const m2 = L.marker([39.91, 116.41], { title: 'Test2' }).addTo(drawnItems);
+    m2.feature = { properties: { name: 'Test2' } };
+
+    updateLayerList();
+    console.log('Added 2 test markers.');
+
+    console.log('Testing Hide on m1:', m1);
+    toggleLayerVisibility(L.stamp(m1));
+
+    if (map.hasLayer(m1)) {
+        console.error('FAIL: m1 is still on map!');
+    } else if (!hiddenLayers.has(m1)) {
+        console.error('FAIL: m1 not found in hiddenLayers!');
+    } else {
+        console.log('PASS: m1 hidden successfully.');
+    }
+
+    console.log('Testing Delete on m2:', m2);
+    // Bypass confirm
+    const originalConfirm = window.confirm;
+    window.confirm = () => true;
+    try {
+        deleteLayer(L.stamp(m2));
+
+        if (map.hasLayer(m2)) {
+            console.error('FAIL: m2 still on map!');
+        } else if (drawnItems.hasLayer(m2)) {
+            console.error('FAIL: m2 still in drawnItems!');
+        } else {
+            console.log('PASS: m2 deleted successfully.');
+        }
+    } finally {
+        window.confirm = originalConfirm;
+    }
+
+    console.log('%c ==== Test Complete ==== ', 'background: #222; color: #bada55');
+}
 
 function updateGeoJSONEditor() {
     const geo = drawnItems.toGeoJSON();
@@ -868,9 +1362,17 @@ function importGeoJSON(raw) {
                         markerClusterGroup.addLayer(layer);
                     } else {
                         drawnItems.addLayer(layer);
+                        // 如果启用了标记组管理器，添加到其中
+                        if (typeof markerGroupManager !== 'undefined' && markerGroupManager && markerGroupManager.enabled) {
+                            markerGroupManager.addMarker(layer);
+                        }
                     }
                 } else {
                     // Non-marker layers go directly to drawnItems
+                    // 绑定点击事件
+                    if (typeof bindShapeEventHandlers === 'function') {
+                        bindShapeEventHandlers(layer);
+                    }
                     drawnItems.addLayer(layer);
                 }
             }
@@ -1212,12 +1714,37 @@ map.on(L.Draw.Event.CREATED, e => {
             drawnItems.addLayer(layer);
         }
     } else {
+        // 非标记图层（多边形、圆形、矩形、折线）
+        layer.feature = { properties: {} };
+        bindShapeEventHandlers(layer);
         drawnItems.addLayer(layer);
     }
 
     updateLayerList();
     updateLabels();
 });
+
+// 绑定形状图层的事件处理器
+function bindShapeEventHandlers(layer) {
+    layer.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+
+        // 使用 SelectionManager 统一管理选中状态
+        if (typeof selectionManager !== 'undefined') {
+            selectionManager.select(layer);
+        }
+
+        // 显示透明度控制
+        if (typeof showOpacityControl === 'function') {
+            showOpacityControl(layer);
+        }
+
+        // 高亮效果
+        layer._isSelected = true;
+        layer.setStyle({ weight: (layer.options.weight || 3) + 2 });
+    });
+}
+window.bindShapeEventHandlers = bindShapeEventHandlers;
 
 map.on(L.Draw.Event.EDITED, () => updateLayerList());
 map.on(L.Draw.Event.DELETED, () => updateLayerList());
@@ -2111,34 +2638,196 @@ map.on('click', e => {
 
 // ==== Global Functions for Layer Management ==== //
 window.toggleLayerVisibility = function (id) {
-    drawnItems.eachLayer(l => {
+    let found = false;
+
+    // 查找图层（在 drawnItems 或 markerClusterGroup 中）
+    const findAndToggle = (l) => {
         if (l._leaflet_id === id) {
-            if (map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l);
-        }
-    });
-};
-window.renameLayer = function (id) {
-    drawnItems.eachLayer(l => {
-        if (l._leaflet_id === id) {
-            const newName = prompt('输入新名称：', l.options.name || '');
-            if (newName !== null) {
-                l.options.name = newName;
-                if (!l.feature) l.feature = { properties: {} };
-                l.feature.properties.name = newName;
-                updateLayerList();
-                updateLabels();
+            found = true;
+            if (map.hasLayer(l)) {
+                map.removeLayer(l);
+                l._hidden = true;
+            } else {
+                map.addLayer(l);
+                l._hidden = false;
+            }
+            // 更新图层列表中的图标状态
+            const layerItem = document.querySelector(`.layer-item[data-layer-id="${id}"]`);
+            if (layerItem) {
+                const eyeBtn = layerItem.querySelector('.layer-btn i.fa-eye, .layer-btn i.fa-eye-slash');
+                if (eyeBtn) {
+                    eyeBtn.className = l._hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+                }
+                if (l._hidden) {
+                    layerItem.classList.add('layer-hidden');
+                } else {
+                    layerItem.classList.remove('layer-hidden');
+                }
             }
         }
-    });
+    };
+
+    drawnItems.eachLayer(findAndToggle);
+
+    // 也检查 markerClusterGroup
+    if (!found && typeof markerClusterGroup !== 'undefined') {
+        markerClusterGroup.eachLayer(findAndToggle);
+    }
+
+    // 检查 markerGroupManager
+    if (!found && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            group.markers.forEach(findAndToggle);
+        });
+    }
 };
-window.deleteLayer = function (id) {
-    drawnItems.eachLayer(l => {
-        if (l._leaflet_id === id) {
-            drawnItems.removeLayer(l);
+window.renameLayer = function (id) {
+    let layer = drawnItems.getLayer(id);
+
+    if (!layer && typeof markerClusterGroup !== 'undefined') {
+        layer = markerClusterGroup.getLayer(id);
+    }
+
+    // 扩展搜索 GroupManager
+    if (!layer && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            if (layer) return;
+            const found = group.markers.find(m => L.stamp(m) == id);
+            if (found) layer = found;
+        });
+    }
+
+    if (layer) {
+        const currentName = layer.options.name || layer.feature?.properties?.name || layer.feature?.properties?.名称 || '';
+        const newName = prompt('输入新名称：', currentName);
+        if (newName !== null && newName.trim() !== '') {
+            layer.options.name = newName;
+            if (!layer.feature) layer.feature = { properties: {} };
+            layer.feature.properties.name = newName;
+            layer.feature.properties.名称 = newName;
             updateLayerList();
+            updateLabels();
+            if (typeof updateFeatureTable === 'function') updateFeatureTable();
         }
-    });
+    }
 };
+
+window.deleteLayer = function (id) {
+    let layerToDelete = drawnItems.getLayer(id);
+
+    if (!layerToDelete && typeof markerClusterGroup !== 'undefined') {
+        layerToDelete = markerClusterGroup.getLayer(id);
+    }
+
+    // 扩展搜索 GroupManager
+    if (!layerToDelete && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            if (layerToDelete) return;
+            const found = group.markers.find(m => L.stamp(m) == id);
+            if (found) layerToDelete = found;
+        });
+    }
+
+    if (layerToDelete) {
+        // 从所有可能的容器中移除
+        if (drawnItems.hasLayer(layerToDelete)) {
+            drawnItems.removeLayer(layerToDelete);
+        }
+        if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup.hasLayer(layerToDelete)) {
+            markerClusterGroup.removeLayer(layerToDelete);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.removeMarker(layerToDelete);
+        }
+        // 从地图移除 (防漏)
+        if (map.hasLayer(layerToDelete)) {
+            map.removeLayer(layerToDelete);
+        }
+
+        updateLayerList();
+        // 更新表格和看板
+        if (typeof updateFeatureTable === 'function') {
+            updateFeatureTable();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    } else {
+        console.error('Layer not found for deletion:', id);
+    }
+};
+
+// ==== Layer Style Editor Functions ==== //
+// 显示透明度控制并绑定事件
+let currentOpacityLayer = null;
+function showOpacityControl(layer) {
+    currentOpacityLayer = layer;
+    const control = document.getElementById('layerOpacityControl');
+    const slider = document.getElementById('layerOpacitySlider');
+    const valueSpan = document.getElementById('layerOpacityValue');
+    const detailsContent = document.getElementById('layerDetailsContent');
+
+    if (!control || !slider) return;
+
+    // 展开图层详情区域
+    const detailsSection = document.getElementById('layerDetailsSection');
+    if (detailsSection && detailsSection.classList.contains('collapsed')) {
+        detailsSection.classList.remove('collapsed');
+    }
+
+    // 更新详情及提示选中的图层
+    const name = layer.options.name || layer.feature?.properties?.name || '未命名图层';
+    if (detailsContent) {
+        detailsContent.innerHTML = `<div style="padding:10px; color:#4a90e2; font-weight:bold;">已选中: ${name}</div>`;
+    }
+
+    // 读取当前透明度
+    const currentOpacity = layer.options.fillOpacity !== undefined ? layer.options.fillOpacity : 0.6;
+    slider.value = currentOpacity;
+    valueSpan.textContent = currentOpacity;
+
+    control.style.display = 'block';
+}
+// 已移除旧版样式编辑器相关代码
+// 更新选中图层的样式
+function updateSelectedLayerStyle(property, value) {
+    if (!currentStyleLayer) return;
+
+    const styleUpdate = {};
+
+    switch (property) {
+        case 'fillColor':
+            styleUpdate.fillColor = value;
+            styleUpdate.fill = true;
+            break;
+        case 'strokeColor':
+            styleUpdate.color = value;
+            break;
+        case 'opacity':
+            styleUpdate.fillOpacity = parseFloat(value);
+            break;
+        case 'weight':
+            styleUpdate.weight = parseInt(value);
+            break;
+    }
+
+    // 应用样式
+    if (currentStyleLayer.setStyle) {
+        currentStyleLayer.setStyle(styleUpdate);
+    }
+
+    // 保存到 feature.properties
+    if (!currentStyleLayer.feature) {
+        currentStyleLayer.feature = { properties: {} };
+    }
+    const props = currentStyleLayer.feature.properties;
+
+    if (property === 'fillColor') props.fill = value;
+    if (property === 'strokeColor') props.stroke = value;
+    if (property === 'opacity') props['fill-opacity'] = parseFloat(value);
+    if (property === 'weight') props['stroke-width'] = parseInt(value);
+}
+window.updateSelectedLayerStyle = updateSelectedLayerStyle;
 
 // ==== Expose Context Menu Functions ==== //
 window.editMarkerProperties = editMarkerProperties;

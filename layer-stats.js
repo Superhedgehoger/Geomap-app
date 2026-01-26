@@ -18,7 +18,7 @@ function updateLayerStats() {
         });
     }
 
-    // 从 MarkerGroupManager 收集（包括收起状态的）
+    // 从 MarkerGroupManager 收集
     if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
         markerGroupManager.groups.forEach(group => {
             group.markers.forEach(marker => {
@@ -26,6 +26,28 @@ function updateLayerStats() {
                     markers.push(marker);
                 }
             });
+        });
+    }
+
+    // 从 MarkerClusterGroup 收集 (点聚合模式)
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        // cluster group might contain markers that are NOT in drawnItems?
+        // Usually cluster takes layers FROM drawnItems or directly added.
+        // We should iterate all recursive layers
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker && !markers.includes(layer)) {
+                markers.push(layer);
+            }
+        });
+    }
+
+    // 从 HiddenLayers 收集 (统计总数时包含隐藏?)
+    // 用户可能希望统计 "Total" assets.
+    if (typeof hiddenLayers !== 'undefined') {
+        hiddenLayers.forEach(layer => {
+            if (layer instanceof L.Marker && !markers.includes(layer)) {
+                markers.push(layer);
+            }
         });
     }
 
@@ -63,6 +85,7 @@ function updateLayerStats() {
             ${groupCount > 0 ? `<span class="stats-group-badge">${groupCount} 个坐标组</span>` : ''}
             ${customGroupCount > 0 ? `<span class="stats-group-badge custom">${customGroupCount} 个自定义组</span>` : ''}
         </div>
+        ${hiddenLayers.size > 0 ? `<div class="stats-hidden-info" style="font-size:0.8rem; opacity:0.7; margin-top:4px;">(包含 ${hiddenLayers.size} 个隐藏标记)</div>` : ''}
     `;
 
     if (typeEntries.length > 0) {
