@@ -81,6 +81,9 @@ function openPropertyDrawer(marker) {
     // Render custom properties
     renderCustomProperties(props);
 
+    // Render radius rings config
+    renderRadiusRingsConfig(props);
+
     // Show drawer with animation
     const drawer = document.getElementById('propertyDrawer');
     drawer.style.display = 'block';
@@ -320,5 +323,138 @@ window.copyCurrentCoordinates = copyCurrentCoordinates;
 window.changeIconFromDrawer = changeIconFromDrawer;
 window.openEventTrackerFromDrawer = openEventTrackerFromDrawer;
 window.deleteMarkerFromDrawer = deleteMarkerFromDrawer;
+
+// ==== Radius Rings Configuration ==== //
+const RADIUS_OPTIONS = [
+    { value: 1500, label: '1.5km' },
+    { value: 2000, label: '2km' },
+    { value: 3000, label: '3km' },
+    { value: 5000, label: '5km' },
+    { value: 10000, label: '10km' }
+];
+
+// 虚线样式配置（不同半径使用不同虚线模式）
+const RADIUS_DASH_PATTERNS = {
+    1500: '5,5',
+    2000: '10,5',
+    3000: '15,5',
+    5000: '20,5',
+    10000: '25,10'
+};
+
+// 渲染范围圈配置 UI
+function renderRadiusRingsConfig(props) {
+    const container = document.getElementById('radiusRingsConfig');
+    if (!container) return;
+
+    const currentRings = props.radiusRings || [];
+
+    container.innerHTML = RADIUS_OPTIONS.map(opt => {
+        const isSelected = currentRings.includes(opt.value);
+        return `
+            <label class="radius-ring-option ${isSelected ? 'selected' : ''}">
+                <input type="checkbox" 
+                       value="${opt.value}" 
+                       ${isSelected ? 'checked' : ''}
+                       onchange="toggleRadiusRing(${opt.value})" />
+                <span class="radius-label">${opt.label}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+// 切换单个半径的选中状态
+function toggleRadiusRing(radius) {
+    if (!currentEditingMarker) return;
+
+    // 确保 feature 结构存在
+    if (!currentEditingMarker.feature) {
+        currentEditingMarker.feature = { type: 'Feature', properties: {}, geometry: {} };
+    }
+    if (!currentEditingMarker.feature.properties) {
+        currentEditingMarker.feature.properties = {};
+    }
+
+    const props = currentEditingMarker.feature.properties;
+    let rings = props.radiusRings || [];
+
+    const index = rings.indexOf(radius);
+    if (index > -1) {
+        // 移除
+        rings.splice(index, 1);
+    } else {
+        // 添加并排序
+        rings.push(radius);
+        rings.sort((a, b) => a - b);
+    }
+
+    props.radiusRings = rings;
+
+    // 立即更新地图上的范围圈
+    updateRadiusRingsOnMap(currentEditingMarker);
+
+    // 更新 UI 选中状态
+    renderRadiusRingsConfig(props);
+}
+
+// 更新地图上的范围圈
+function updateRadiusRingsOnMap(marker) {
+    if (!marker || !(marker instanceof L.Marker)) return;
+
+    const latlng = marker.getLatLng();
+    const props = marker.feature?.properties || {};
+    const rings = props.radiusRings || [];
+
+    // 清除旧的范围圈
+    if (marker._radiusRings) {
+        marker._radiusRings.forEach(circle => {
+            if (map.hasLayer(circle)) {
+                map.removeLayer(circle);
+            }
+        });
+    }
+
+    // 创建新的范围圈
+    marker._radiusRings = rings.map(radius => {
+        const dashPattern = RADIUS_DASH_PATTERNS[radius] || '10,5';
+        const circle = L.circle(latlng, {
+            radius: radius,  // 使用 meters 单位
+            color: '#1677FF',
+            weight: 2,
+            opacity: 0.8,
+            fillColor: '#1677FF',
+            fillOpacity: 0.1,
+            dashArray: dashPattern,
+            interactive: false  // 不响应鼠标事件
+        });
+
+        // 如果标记未隐藏，则添加到地图
+        if (!marker._hidden) {
+            circle.addTo(map);
+        }
+
+        return circle;
+    });
+}
+
+// 清除标记的所有范围圈
+function clearRadiusRings(marker) {
+    if (!marker) return;
+
+    if (marker._radiusRings) {
+        marker._radiusRings.forEach(circle => {
+            if (map.hasLayer(circle)) {
+                map.removeLayer(circle);
+            }
+        });
+        marker._radiusRings = [];
+    }
+}
+
+// 全局暴露函数
+window.renderRadiusRingsConfig = renderRadiusRingsConfig;
+window.toggleRadiusRing = toggleRadiusRing;
+window.updateRadiusRingsOnMap = updateRadiusRingsOnMap;
+window.clearRadiusRings = clearRadiusRings;
 
 console.log('Property drawer system initialized');

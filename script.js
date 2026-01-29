@@ -1153,6 +1153,17 @@ function toggleLayerVisibility(leafletId) {
         }
     }
 
+    // 同步范围圈显隐
+    if (layer._radiusRings) {
+        layer._radiusRings.forEach(circle => {
+            if (layer._hidden) {
+                if (map.hasLayer(circle)) map.removeLayer(circle);
+            } else {
+                if (!map.hasLayer(circle)) map.addLayer(circle);
+            }
+        });
+    }
+
     updateLayerList();
 }
 window.toggleLayerVisibility = toggleLayerVisibility;
@@ -1166,6 +1177,11 @@ function deleteLayer(leafletId) {
     }
 
     const { layer, container, type, group } = result;
+
+    // 清除范围圈
+    if (typeof clearRadiusRings === 'function') {
+        clearRadiusRings(layer);
+    }
 
     // Remove from everywhere
     if (map.hasLayer(layer)) map.removeLayer(layer);
@@ -1746,7 +1762,19 @@ function bindShapeEventHandlers(layer) {
 }
 window.bindShapeEventHandlers = bindShapeEventHandlers;
 
-map.on(L.Draw.Event.EDITED, () => updateLayerList());
+map.on(L.Draw.Event.EDITED, (e) => {
+    // 更新被编辑标记的范围圈位置
+    if (e.layers) {
+        e.layers.eachLayer(layer => {
+            if (layer instanceof L.Marker && layer._radiusRings) {
+                if (typeof updateRadiusRingsOnMap === 'function') {
+                    updateRadiusRingsOnMap(layer);
+                }
+            }
+        });
+    }
+    updateLayerList();
+});
 map.on(L.Draw.Event.DELETED, () => updateLayerList());
 
 exportGeoJSONBtn.addEventListener('click', exportGeoJSON);
