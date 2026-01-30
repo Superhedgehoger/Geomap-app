@@ -2301,86 +2301,192 @@ if (loadSlotBtn && saveSlotSelect) {
 
 
 // ---- Legacy Features ---- //
-if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-        const rows = [];
-        drawnItems.eachLayer(l => {
-            if (l instanceof L.Marker) {
-                const ll = l.getLatLng();
-                rows.push(`${ll.lat},${ll.lng}`);
+
+// ==== 辅助函数：获取所有标记（drawnItems + markerClusterGroup）====
+function getAllMarkers() {
+    const markers = [];
+
+    // 从 drawnItems 收集
+    if (drawnItems) {
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markers.push(layer);
             }
         });
-        if (rows.length === 0) {
+    }
+
+    // 从 markerClusterGroup 收集
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markers.push(layer);
+            }
+        });
+    }
+
+    return markers;
+}
+
+// ==== 辅助函数：列名映射 ====
+const COLUMN_ALIASES = {
+    longitude: ['经度', '经度 (Longitude)', 'Longitude', 'lng', 'longitude', 'lon', 'x'],
+    latitude: ['纬度', '纬度 (Latitude)', 'Latitude', 'lat', 'latitude', 'y'],
+    name: ['名称', '名称 (Name)', 'Name', 'name', '门店', '店名', '标记名称'],
+    type: ['类型', '类型 (Type)', 'Type', 'type', '业务类型', '分类'],
+    address: ['地址', '地址 (Address)', 'Address', 'address', '详细地址'],
+    layerName: ['图层名称', 'LayerName', 'layerName', 'layer', '分组']
+};
+
+function getValueByAliases(row, aliases) {
+    for (const alias of aliases) {
+        if (row[alias] !== undefined && row[alias] !== null && row[alias] !== '') {
+            return row[alias];
+        }
+    }
+    return null;
+}
+
+// 技术内部字段（不导出）
+const INTERNAL_FIELDS = [
+    'marker-color', 'marker-symbol', 'marker-size',
+    '_originalLat', '_originalLng', '_leaflet_id',
+    'events', 'radiusRings' // radiusRings 单独处理
+];
+
+function isInternalField(key) {
+    return key.startsWith('_') || INTERNAL_FIELDS.includes(key);
+}
+
+// ==== 导出 CSV（仅坐标）====
+if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+        const markers = getAllMarkers();
+
+        if (markers.length === 0) {
             alert('没有标记可导出');
             return;
         }
-        const csv = 'data:text/csv;charset=utf-8,latitude,longitude\n' + rows.join('\n');
+
+        const rows = ['latitude,longitude,name,type,address'];
+        markers.forEach(marker => {
+            const ll = marker.getLatLng();
+            const props = marker.feature?.properties || {};
+            const name = (props.name || '').replace(/,/g, '，').replace(/"/g, '""');
+            const type = (props.type || '').replace(/,/g, '，').replace(/"/g, '""');
+            const address = (props.address || '').replace(/,/g, '，').replace(/"/g, '""');
+            rows.push(`${ll.lat},${ll.lng},"${name}","${type}","${address}"`);
+        });
+
+        const csvContent = rows.join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.setAttribute('href', encodeURI(csv));
-        a.setAttribute('download', 'coordinates.csv');
+        a.href = url;
+        a.download = 'coordinates.csv';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 }
 
 // ==== Excel Functions ==== //
 
-// Download Excel Template
+// Download Excel Template（完整业务字段）
 if (downloadTemplateBtn) {
     downloadTemplateBtn.addEventListener('click', () => {
         const templateData = [
             {
                 '经度 (Longitude)': 120.38,
                 '纬度 (Latitude)': 36.07,
-                '名称 (Name)': '示例标记',
-                '类型 (Type)': 'shop',
-                '地址 (Address)': '山东省青岛市市南区',
-                '标记颜色 (marker-color)': '#4a90e2',
-                '标记符号 (marker-symbol)': 'shop'
+                '名称 (Name)': '示例门店',
+                '类型 (Type)': '加油站',
+                '地址 (Address)': '山东省青岛市市南区香港中路',
+                '图层名称 (LayerName)': '青岛片区',
+                '销售等级': 'A',
+                '加油笔数': 150,
+                '钱包会员比例': '35%',
+                '备注': '示例数据'
             }
         ];
 
         const ws = XLSX.utils.json_to_sheet(templateData);
+
+        // 设置列宽
+        ws['!cols'] = [
+            { wch: 18 }, // 经度
+            { wch: 18 }, // 纬度
+            { wch: 20 }, // 名称
+            { wch: 12 }, // 类型
+            { wch: 35 }, // 地址
+            { wch: 15 }, // 图层名称
+            { wch: 10 }, // 销售等级
+            { wch: 12 }, // 加油笔数
+            { wch: 15 }, // 钱包会员比例
+            { wch: 20 }  // 备注
+        ];
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '标记数据');
         XLSX.writeFile(wb, '地图标记导入模板.xlsx');
     });
 }
 
-// Export to Excel with all fields
+// Export to Excel with ALL fields
 if (exportExcelBtn) {
     exportExcelBtn.addEventListener('click', () => {
-        const data = [];
-        drawnItems.eachLayer(l => {
-            if (l instanceof L.Marker) {
-                const ll = l.getLatLng();
-                const props = l.feature?.properties || {};
-                data.push({
-                    '经度 (Longitude)': ll.lng,
-                    '纬度 (Latitude)': ll.lat,
-                    '名称 (Name)': props.name || '',
-                    '类型 (Type)': props.type || '',
-                    '地址 (Address)': props.address || '',
-                    '标记颜色 (marker-color)': props['marker-color'] || '#4a90e2',
-                    '标记符号 (marker-symbol)': props['marker-symbol'] || 'default'
-                });
-            }
-        });
+        const markers = getAllMarkers();
 
-        if (data.length === 0) {
+        if (markers.length === 0) {
             alert('没有标记可导出');
             return;
         }
+
+        // 收集所有唯一的属性键（用于动态列）
+        const allKeys = new Set();
+        const data = [];
+
+        markers.forEach(marker => {
+            const ll = marker.getLatLng();
+            const props = marker.feature?.properties || {};
+
+            // 基础字段
+            const row = {
+                '经度 (Longitude)': ll.lng,
+                '纬度 (Latitude)': ll.lat,
+                '名称 (Name)': props.name || '',
+                '类型 (Type)': props.type || '',
+                '地址 (Address)': props.address || '',
+                '图层名称 (LayerName)': props.layerName || props.group || ''
+            };
+
+            // 添加所有业务属性（排除内部字段）
+            Object.keys(props).forEach(key => {
+                if (!isInternalField(key) &&
+                    !['name', 'type', 'address', 'layerName', 'group'].includes(key)) {
+                    row[key] = props[key];
+                    allKeys.add(key);
+                }
+            });
+
+            // 处理 radiusRings
+            if (props.radiusRings && Array.isArray(props.radiusRings)) {
+                row['范围圈 (radiusRings)'] = props.radiusRings.join(';');
+            }
+
+            data.push(row);
+        });
 
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '标记数据');
         XLSX.writeFile(wb, '地图标记数据.xlsx');
+
+        console.log(`成功导出 ${data.length} 个标记`);
     });
 }
 
-// Import from Excel
+// Import from Excel（保留所有业务字段）
 if (excelFileInput) {
     excelFileInput.addEventListener('change', e => {
         const file = e.target.files[0];
@@ -2394,27 +2500,69 @@ if (excelFileInput) {
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet);
 
+                if (rows.length === 0) {
+                    alert('Excel 文件为空或格式不正确');
+                    return;
+                }
+
                 let addedCount = 0;
-                rows.forEach(row => {
-                    // Support multiple column name formats
-                    const lng = row['经度 (Longitude)'] || row['Longitude'] || row['lng'] || row['经度'];
-                    const lat = row['纬度 (Latitude)'] || row['Latitude'] || row['lat'] || row['纬度'];
+                let errorCount = 0;
+
+                rows.forEach((row, index) => {
+                    // 获取坐标
+                    const lng = getValueByAliases(row, COLUMN_ALIASES.longitude);
+                    const lat = getValueByAliases(row, COLUMN_ALIASES.latitude);
 
                     if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                        errorCount++;
+                        console.warn(`第 ${index + 2} 行坐标无效，已跳过`);
                         return;
                     }
 
+                    // 构建属性对象（包含所有列）
                     const properties = {
-                        name: row['名称 (Name)'] || row['Name'] || row['name'] || row['名称'] || '未命名',
-                        type: row['类型 (Type)'] || row['Type'] || row['type'] || row['类型'] || '',
-                        address: row['地址 (Address)'] || row['Address'] || row['address'] || row['地址'] || '',
-                        'marker-color': row['标记颜色 (marker-color)'] || row['marker-color'] || row['color'] || '#4a90e2',
-                        'marker-symbol': row['标记符号 (marker-symbol)'] || row['marker-symbol'] || row['symbol'] || 'default'
+                        name: getValueByAliases(row, COLUMN_ALIASES.name) || '未命名',
+                        type: getValueByAliases(row, COLUMN_ALIASES.type) || '',
+                        address: getValueByAliases(row, COLUMN_ALIASES.address) || '',
+                        layerName: getValueByAliases(row, COLUMN_ALIASES.layerName) || '',
+                        'marker-color': row['标记颜色'] || row['marker-color'] || '#4a90e2',
+                        'marker-symbol': row['标记符号'] || row['marker-symbol'] || 'default'
                     };
+
+                    // 添加所有额外的业务字段
+                    const knownAliases = new Set();
+                    Object.values(COLUMN_ALIASES).forEach(aliases => {
+                        aliases.forEach(a => knownAliases.add(a));
+                    });
+                    knownAliases.add('标记颜色');
+                    knownAliases.add('marker-color');
+                    knownAliases.add('标记符号');
+                    knownAliases.add('marker-symbol');
+
+                    Object.keys(row).forEach(key => {
+                        if (!knownAliases.has(key) && row[key] !== undefined && row[key] !== '') {
+                            // 处理范围圈字符串
+                            if (key === '范围圈 (radiusRings)' || key === 'radiusRings') {
+                                const rings = String(row[key]).split(';').map(r => parseFloat(r)).filter(r => !isNaN(r));
+                                if (rings.length > 0) {
+                                    properties.radiusRings = rings;
+                                }
+                            } else {
+                                properties[key] = row[key];
+                            }
+                        }
+                    });
 
                     const icon = getMarkerIcon(properties);
                     const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
-                    marker.feature = { properties };
+                    marker.feature = {
+                        type: 'Feature',
+                        properties,
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [parseFloat(lng), parseFloat(lat)]
+                        }
+                    };
 
                     bindMarkerPopup(marker);
                     bindMarkerContextMenu(marker);
@@ -2424,13 +2572,19 @@ if (excelFileInput) {
 
                 if (addedCount > 0) {
                     updateLayerList();
-                    map.fitBounds(drawnItems.getBounds());
-                    alert(`成功导入 ${addedCount} 个标记`);
+                    if (drawnItems.getLayers().length > 0) {
+                        map.fitBounds(drawnItems.getBounds());
+                    }
+                    let msg = `成功导入 ${addedCount} 个标记`;
+                    if (errorCount > 0) {
+                        msg += `\n（跳过 ${errorCount} 行无效数据）`;
+                    }
+                    alert(msg);
                 } else {
-                    alert('未找到有效的坐标数据');
+                    alert('未找到有效的坐标数据。\n请确保 Excel 包含"经度"和"纬度"列（或 Longitude/Latitude）');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Excel 解析错误:', err);
                 alert('Excel 文件解析失败：' + err.message);
             }
         };
@@ -2440,7 +2594,7 @@ if (excelFileInput) {
     });
 }
 
-// Enhanced Coord Import with PapaParse and Type Detection
+// Import from CSV（保留所有业务字段）
 if (coordFileInput) {
     coordFileInput.addEventListener('change', e => {
         const file = e.target.files[0];
@@ -2451,54 +2605,77 @@ if (coordFileInput) {
             skipEmptyLines: true,
             complete: function (results) {
                 const rows = results.data;
+
+                if (rows.length === 0) {
+                    alert('CSV 文件为空');
+                    return;
+                }
+
                 let addedCount = 0;
+                let errorCount = 0;
 
-                rows.forEach(row => {
-                    let lat, lng;
+                rows.forEach((row, index) => {
+                    const lng = getValueByAliases(row, COLUMN_ALIASES.longitude);
+                    const lat = getValueByAliases(row, COLUMN_ALIASES.latitude);
 
-                    const latKeys = ['纬度', 'Latitude', 'lat', 'latitude', '纬度 (Latitude)'];
-                    const lngKeys = ['经度', 'Longitude', 'lng', 'longitude', '经度 (Longitude)'];
-
-                    for (const key of latKeys) {
-                        if (row[key]) { lat = parseFloat(row[key]); break; }
-                    }
-                    for (const key of lngKeys) {
-                        if (row[key]) { lng = parseFloat(row[key]); break; }
+                    if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                        errorCount++;
+                        return;
                     }
 
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        const name = row['门店'] || row['name'] || row['Name'] || row['名称'] || '未命名';
-                        const type = row['类型'] || row['type'] || row['Type'] || '';
-                        const address = row['地址'] || row['address'] || row['Address'] || '';
+                    // 构建属性对象
+                    const properties = {
+                        name: getValueByAliases(row, COLUMN_ALIASES.name) || '未命名',
+                        type: getValueByAliases(row, COLUMN_ALIASES.type) || '',
+                        address: getValueByAliases(row, COLUMN_ALIASES.address) || '',
+                        layerName: getValueByAliases(row, COLUMN_ALIASES.layerName) || ''
+                    };
 
-                        const properties = {
-                            name: name,
-                            type: type,
-                            address: address
-                        };
+                    // 添加所有额外字段
+                    const knownAliases = new Set();
+                    Object.values(COLUMN_ALIASES).forEach(aliases => {
+                        aliases.forEach(a => knownAliases.add(a));
+                    });
 
-                        const icon = getMarkerIcon(properties);
-                        const marker = L.marker([lat, lng], { icon: icon });
+                    Object.keys(row).forEach(key => {
+                        if (!knownAliases.has(key) && row[key] !== undefined && row[key] !== '') {
+                            properties[key] = row[key];
+                        }
+                    });
 
-                        marker.feature = { properties: properties };
+                    const icon = getMarkerIcon(properties);
+                    const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                    marker.feature = {
+                        type: 'Feature',
+                        properties,
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [parseFloat(lng), parseFloat(lat)]
+                        }
+                    };
 
-                        bindMarkerPopup(marker);
-
-                        bindMarkerContextMenu(marker);
-                        drawnItems.addLayer(marker);
-                        addedCount++;
-                    }
+                    bindMarkerPopup(marker);
+                    bindMarkerContextMenu(marker);
+                    drawnItems.addLayer(marker);
+                    addedCount++;
                 });
 
                 if (addedCount > 0) {
                     updateLayerList();
-                    map.fitBounds(drawnItems.getBounds());
-                    alert(`成功导入 ${addedCount} 个标记`);
+                    if (drawnItems.getLayers().length > 0) {
+                        map.fitBounds(drawnItems.getBounds());
+                    }
+                    let msg = `成功导入 ${addedCount} 个标记`;
+                    if (errorCount > 0) {
+                        msg += `\n（跳过 ${errorCount} 行无效数据）`;
+                    }
+                    alert(msg);
                 } else {
-                    alert('未找到有效的坐标数据，请检查 CSV 文件格式');
+                    alert('未找到有效的坐标数据。\n请确保 CSV 包含"经度"和"纬度"列（或 lat/lng）');
                 }
             },
             error: function (err) {
+                console.error('CSV 解析错误:', err);
                 alert('CSV 解析失败: ' + err.message);
             }
         });
