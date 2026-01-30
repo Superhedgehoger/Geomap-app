@@ -2301,192 +2301,211 @@ if (loadSlotBtn && saveSlotSelect) {
 
 
 // ---- Legacy Features ---- //
-exportBtn.addEventListener('click', () => {
-    const rows = [];
-    drawnItems.eachLayer(l => {
-        if (l instanceof L.Marker) {
-            const ll = l.getLatLng();
-            rows.push(`${ll.lat},${ll.lng} `);
+if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+        const rows = [];
+        drawnItems.eachLayer(l => {
+            if (l instanceof L.Marker) {
+                const ll = l.getLatLng();
+                rows.push(`${ll.lat},${ll.lng}`);
+            }
+        });
+        if (rows.length === 0) {
+            alert('没有标记可导出');
+            return;
         }
+        const csv = 'data:text/csv;charset=utf-8,latitude,longitude\n' + rows.join('\n');
+        const a = document.createElement('a');
+        a.setAttribute('href', encodeURI(csv));
+        a.setAttribute('download', 'coordinates.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     });
-    const csv = 'data:text/csv;charset=utf-8,latitude,longitude\n' + rows.join('\n');
-    const a = document.createElement('a');
-    a.setAttribute('href', encodeURI(csv));
-    a.setAttribute('download', 'coordinates.csv');
-    document.body.appendChild(a);
-    a.click();
-});
+}
 
 // ==== Excel Functions ==== //
 
 // Download Excel Template
-downloadTemplateBtn.addEventListener('click', () => {
-    const templateData = [
-        {
-            '经度 (Longitude)': 120.38,
-            '纬度 (Latitude)': 36.07,
-            '名称 (Name)': '示例标记',
-            '类型 (Type)': 'shop',
-            '地址 (Address)': '山东省青岛市市南区',
-            '标记颜色 (marker-color)': '#4a90e2',
-            '标记符号 (marker-symbol)': 'shop'
-        }
-    ];
+if (downloadTemplateBtn) {
+    downloadTemplateBtn.addEventListener('click', () => {
+        const templateData = [
+            {
+                '经度 (Longitude)': 120.38,
+                '纬度 (Latitude)': 36.07,
+                '名称 (Name)': '示例标记',
+                '类型 (Type)': 'shop',
+                '地址 (Address)': '山东省青岛市市南区',
+                '标记颜色 (marker-color)': '#4a90e2',
+                '标记符号 (marker-symbol)': 'shop'
+            }
+        ];
 
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
-    XLSX.writeFile(wb, '地图标记导入模板.xlsx');
-});
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+        XLSX.writeFile(wb, '地图标记导入模板.xlsx');
+    });
+}
 
 // Export to Excel with all fields
-exportExcelBtn.addEventListener('click', () => {
-    const data = [];
-    drawnItems.eachLayer(l => {
-        if (l instanceof L.Marker) {
-            const ll = l.getLatLng();
-            const props = l.feature?.properties || {};
-            data.push({
-                '经度 (Longitude)': ll.lng,
-                '纬度 (Latitude)': ll.lat,
-                '名称 (Name)': props.name || '',
-                '类型 (Type)': props.type || '',
-                '地址 (Address)': props.address || '',
-                '标记颜色 (marker-color)': props['marker-color'] || '#4a90e2',
-                '标记符号 (marker-symbol)': props['marker-symbol'] || 'default'
-            });
+if (exportExcelBtn) {
+    exportExcelBtn.addEventListener('click', () => {
+        const data = [];
+        drawnItems.eachLayer(l => {
+            if (l instanceof L.Marker) {
+                const ll = l.getLatLng();
+                const props = l.feature?.properties || {};
+                data.push({
+                    '经度 (Longitude)': ll.lng,
+                    '纬度 (Latitude)': ll.lat,
+                    '名称 (Name)': props.name || '',
+                    '类型 (Type)': props.type || '',
+                    '地址 (Address)': props.address || '',
+                    '标记颜色 (marker-color)': props['marker-color'] || '#4a90e2',
+                    '标记符号 (marker-symbol)': props['marker-symbol'] || 'default'
+                });
+            }
+        });
+
+        if (data.length === 0) {
+            alert('没有标记可导出');
+            return;
         }
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+        XLSX.writeFile(wb, '地图标记数据.xlsx');
     });
-
-    if (data.length === 0) {
-        alert('没有标记可导出');
-        return;
-    }
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
-    XLSX.writeFile(wb, '地图标记数据.xlsx');
-});
+}
 
 // Import from Excel
-excelFileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
+if (excelFileInput) {
+    excelFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = ev => {
-        try {
-            const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(firstSheet);
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
 
-            let addedCount = 0;
-            rows.forEach(row => {
-                // Support multiple column name formats
-                const lng = row['经度 (Longitude)'] || row['Longitude'] || row['lng'] || row['经度'];
-                const lat = row['纬度 (Latitude)'] || row['Latitude'] || row['lat'] || row['纬度'];
+                let addedCount = 0;
+                rows.forEach(row => {
+                    // Support multiple column name formats
+                    const lng = row['经度 (Longitude)'] || row['Longitude'] || row['lng'] || row['经度'];
+                    const lat = row['纬度 (Latitude)'] || row['Latitude'] || row['lat'] || row['纬度'];
 
-                if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
-                    return;
-                }
-
-                const properties = {
-                    name: row['名称 (Name)'] || row['Name'] || row['name'] || row['名称'] || '未命名',
-                    type: row['类型 (Type)'] || row['Type'] || row['type'] || row['类型'] || '',
-                    address: row['地址 (Address)'] || row['Address'] || row['address'] || row['地址'] || '',
-                    'marker-color': row['标记颜色 (marker-color)'] || row['marker-color'] || row['color'] || '#4a90e2',
-                    'marker-symbol': row['标记符号 (marker-symbol)'] || row['marker-symbol'] || row['symbol'] || 'default'
-                };
-
-                const icon = getMarkerIcon(properties);
-                const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
-                marker.feature = { properties };
-
-                bindMarkerPopup(marker);
-                bindMarkerContextMenu(marker);
-                drawnItems.addLayer(marker);
-                addedCount++;
-            });
-
-            if (addedCount > 0) {
-                updateLayerList();
-                map.fitBounds(drawnItems.getBounds());
-                alert(`成功导入 ${addedCount} 个标记`);
-            } else {
-                alert('未找到有效的坐标数据');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Excel 文件解析失败：' + err.message);
-        }
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-// Enhanced Coord Import with PapaParse and Type Detection
-coordFileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function (results) {
-            const rows = results.data;
-            let addedCount = 0;
-
-            rows.forEach(row => {
-                let lat, lng;
-
-                const latKeys = ['纬度', 'Latitude', 'lat', 'latitude', '纬度 (Latitude)'];
-                const lngKeys = ['经度', 'Longitude', 'lng', 'longitude', '经度 (Longitude)'];
-
-                for (const key of latKeys) {
-                    if (row[key]) { lat = parseFloat(row[key]); break; }
-                }
-                for (const key of lngKeys) {
-                    if (row[key]) { lng = parseFloat(row[key]); break; }
-                }
-
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const name = row['门店'] || row['name'] || row['Name'] || row['名称'] || '未命名';
-                    const type = row['类型'] || row['type'] || row['Type'] || '';
-                    const address = row['地址'] || row['address'] || row['Address'] || '';
+                    if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                        return;
+                    }
 
                     const properties = {
-                        name: name,
-                        type: type,
-                        address: address
+                        name: row['名称 (Name)'] || row['Name'] || row['name'] || row['名称'] || '未命名',
+                        type: row['类型 (Type)'] || row['Type'] || row['type'] || row['类型'] || '',
+                        address: row['地址 (Address)'] || row['Address'] || row['address'] || row['地址'] || '',
+                        'marker-color': row['标记颜色 (marker-color)'] || row['marker-color'] || row['color'] || '#4a90e2',
+                        'marker-symbol': row['标记符号 (marker-symbol)'] || row['marker-symbol'] || row['symbol'] || 'default'
                     };
 
                     const icon = getMarkerIcon(properties);
-                    const marker = L.marker([lat, lng], { icon: icon });
-
-                    marker.feature = { properties: properties };
+                    const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                    marker.feature = { properties };
 
                     bindMarkerPopup(marker);
-
                     bindMarkerContextMenu(marker);
                     drawnItems.addLayer(marker);
                     addedCount++;
-                }
-            });
+                });
 
-            if (addedCount > 0) {
-                updateLayerList();
-                map.fitBounds(drawnItems.getBounds());
-                alert(`成功导入 ${addedCount} 个标记`);
-            } else {
-                alert('未找到有效的坐标数据，请检查 CSV 文件格式');
+                if (addedCount > 0) {
+                    updateLayerList();
+                    map.fitBounds(drawnItems.getBounds());
+                    alert(`成功导入 ${addedCount} 个标记`);
+                } else {
+                    alert('未找到有效的坐标数据');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Excel 文件解析失败：' + err.message);
             }
-        },
-        error: function (err) {
-            alert('CSV 解析失败: ' + err.message);
-        }
+        };
+        reader.readAsArrayBuffer(file);
+        // Reset input to allow re-selecting the same file
+        e.target.value = '';
     });
-});
+}
+
+// Enhanced Coord Import with PapaParse and Type Detection
+if (coordFileInput) {
+    coordFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                const rows = results.data;
+                let addedCount = 0;
+
+                rows.forEach(row => {
+                    let lat, lng;
+
+                    const latKeys = ['纬度', 'Latitude', 'lat', 'latitude', '纬度 (Latitude)'];
+                    const lngKeys = ['经度', 'Longitude', 'lng', 'longitude', '经度 (Longitude)'];
+
+                    for (const key of latKeys) {
+                        if (row[key]) { lat = parseFloat(row[key]); break; }
+                    }
+                    for (const key of lngKeys) {
+                        if (row[key]) { lng = parseFloat(row[key]); break; }
+                    }
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const name = row['门店'] || row['name'] || row['Name'] || row['名称'] || '未命名';
+                        const type = row['类型'] || row['type'] || row['Type'] || '';
+                        const address = row['地址'] || row['address'] || row['Address'] || '';
+
+                        const properties = {
+                            name: name,
+                            type: type,
+                            address: address
+                        };
+
+                        const icon = getMarkerIcon(properties);
+                        const marker = L.marker([lat, lng], { icon: icon });
+
+                        marker.feature = { properties: properties };
+
+                        bindMarkerPopup(marker);
+
+                        bindMarkerContextMenu(marker);
+                        drawnItems.addLayer(marker);
+                        addedCount++;
+                    }
+                });
+
+                if (addedCount > 0) {
+                    updateLayerList();
+                    map.fitBounds(drawnItems.getBounds());
+                    alert(`成功导入 ${addedCount} 个标记`);
+                } else {
+                    alert('未找到有效的坐标数据，请检查 CSV 文件格式');
+                }
+            },
+            error: function (err) {
+                alert('CSV 解析失败: ' + err.message);
+            }
+        });
+        // Reset input to allow re-selecting the same file
+        e.target.value = '';
+    });
+}
 
 if (addressFileInput) {
     addressFileInput.addEventListener('change', e => {

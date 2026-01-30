@@ -4,6 +4,24 @@
 
 ---
 
+## [v2.14.1] - 2026-01-30
+
+### 🐛 Bug 修复
+
+#### Excel/CSV 导入导出功能修复
+- **修复**: UI 重构后导入导出按钮无响应问题
+- **原因**: 事件绑定代码缺少 null 检查，部分元素不存在时导致后续代码无法执行
+- **修复内容**:
+  - 为 `exportBtn`（导出 CSV）添加 null 检查
+  - 为 `downloadTemplateBtn`（下载模板）添加 null 检查
+  - 为 `exportExcelBtn`（导出 Excel）添加 null 检查
+  - 为 `excelFileInput`（导入 Excel）添加 null 检查
+  - 为 `coordFileInput`（导入 CSV）添加 null 检查
+- **增强**: 导出 CSV 时添加空数据检查提示
+- **增强**: 文件导入后自动重置 input，支持重复选择同一文件
+
+---
+
 ## [v2.14.0] - 2026-01-29
 
 ### ✨ 新功能
