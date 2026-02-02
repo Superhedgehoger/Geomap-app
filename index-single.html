@@ -13,6 +13,9 @@
     <!-- Leaflet.draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
         crossorigin="" />
+    <!-- Leaflet.markercluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <!-- Tabulator CSS (dark theme) -->
     <link href="https://unpkg.com/tabulator-tables@5.5/dist/css/tabulator_midnight.min.css" rel="stylesheet">
     <!-- Custom Styles -->
@@ -5130,6 +5133,697 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     transform: translateX(0);
     opacity: 1;
 }
+/* ==== Marker Clustering Styles ==== */
+/* 聚合点样式 - 与项目整体风格一致 */
+
+.marker-cluster-custom {
+    background: transparent;
+}
+
+.cluster-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.cluster-icon:hover {
+    transform: scale(1.1);
+}
+
+/* 小聚合点 (< 100) */
+.cluster-small {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6ec857 0%, #4cae34 100%);
+    font-size: 13px;
+}
+
+/* 中聚合点 (100-499) */
+.cluster-medium {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #f5a623 0%, #e0910b 100%);
+    font-size: 14px;
+}
+
+/* 大聚合点 (500+) */
+.cluster-large {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    font-size: 15px;
+}
+
+/* 覆盖默认 MarkerCluster 样式 */
+.marker-cluster-custom .cluster-icon span {
+    display: block;
+}
+
+
+/* ==== 危险按钮样式 ==== */
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+
+/* ==== 隐藏图层样式 ==== */
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* ==== 样式编辑器面板 ==== */
+.layer-style-editor {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.style-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.style-row label {
+    flex: 0 0 80px;
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.style-row input[type="color"] {
+    width: 40px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+}
+
+.style-row input[type="range"] {
+    flex: 1;
+    accent-color: #4a90e2;
+}
+
+.style-row input[type="number"] {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.style-value {
+    min-width: 40px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+
+/* ==== 图层列表项样式 ==== */
+.layer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.layer-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-item.selected {
+    background: rgba(74, 144, 226, 0.2);
+    border-left: 3px solid #4a90e2;
+}
+
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* 图层主按钮 */
+.layer-btn-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    padding: 4px;
+    min-width: 0;
+}
+
+.layer-btn-main:hover {
+    color: #4a90e2;
+}
+
+.layer-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.layer-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.layer-type {
+    font-size: 0.7rem;
+    color: #888;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+
+.event-badge {
+    background: #e24a4a;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+/* 图层操作按钮容器 */
+.layer-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.layer-item:hover .layer-actions {
+    opacity: 1;
+}
+
+/* 图层操作按钮 */
+.layer-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 4px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.layer-btn:hover {
+    background: rgba(74, 144, 226, 0.3);
+    color: #4a90e2;
+}
+
+.layer-btn.delete:hover {
+    background: rgba(226, 74, 74, 0.3);
+    color: #e24a4a;
+}
+
+/* ==== 事件追踪器面板 ==== */
+#eventTrackerPanel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 400px;
+    max-height: calc(100vh - 32px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    z-index: 1100;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#eventTrackerPanel[style*="flex"] {
+    display: flex !important;
+}
+
+#eventTrackerPanel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventTrackerPanel .panel-header h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+#eventListView {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#eventListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.event-card {
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.event-card:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.btn-add-event {
+    padding: 10px;
+    background: rgba(74, 144, 226, 0.2);
+    border: 1px dashed rgba(74, 144, 226, 0.5);
+    border-radius: 8px;
+    color: #4a90e2;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-event:hover {
+    background: rgba(74, 144, 226, 0.3);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 24px;
+    color: #888;
+}
+
+
+/* ==== 事件追踪器面板 ==== */
+#eventTrackerPanel {
+    position: fixed;
+    top: 16px;
+    left: 320px;
+    width: 400px;
+    max-height: calc(100vh - 32px);
+    z-index: 1001;
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-float);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#eventTrackerPanel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventTrackerPanel .panel-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #4a90e2;
+}
+
+#eventTrackerPanel .panel-header button {
+    padding: 6px 12px;
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 6px;
+    color: #ff6b6b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#eventTrackerPanel .panel-header button:hover {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+#eventTrackerFeatureName {
+    padding: 10px 16px;
+    margin: 0;
+    background: rgba(74, 144, 226, 0.1);
+    border-bottom: 1px solid var(--border-glass);
+}
+
+#eventListView,
+#eventEditView {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+#eventListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.event-card {
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.event-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #4a90e2;
+}
+
+.btn-add-event {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.tracker-section {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+.tracker-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: #4a90e2;
+}
+
+.edit-view-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.edit-view-header .btn-back {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.edit-view-header input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+}
+
+
+/* UI Updates */
+.layer-btn.active {
+    color: var(--primary-color);
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.disabled-by-cluster {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Browse Mode UI Locks */
+body.browse-mode-active .layer-actions {
+    display: none !important;
+}
+
+/* Layer Group Styles */
+.layer-group-header {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-glass);
+    font-weight: 500;
+    user-select: none;
+}
+.layer-group-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.layer-group-content {
+    padding-left: 0;
+}
+.layer-group-content .layer-item {
+    padding-left: 20px;
+    border-left: 2px solid transparent;
+}
+.layer-group-content .layer-item:hover {
+     border-left-color: var(--primary-color);
+}
+
+
+/* Selection Mode Visual Feedback */
+body.selection-mode {
+    cursor: crosshair;
+}
+
+body.selection-mode .map-container::before {
+    content: '🎯 选择模式已激活 - 点击标记进行选择';
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74, 158, 255, 0.95);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.marker-pin.selection-highlight {
+    filter: drop-shadow(0 0 8px #4a9eff) brightness(1.3);
+    transform: scale(1.15);
+    transition: all 0.2s;
+}
+
+
+/* Selection Mode Fixes */
+body.selection-mode {
+    cursor: crosshair;
+}
+
+/* 确保选择模式下标记仍可点击 */
+body.selection-mode .leaflet-marker-icon {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+body.selection-mode .custom-marker-icon {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* 选中高亮效果 */
+.selection-highlight {
+    filter: drop-shadow(0 0 8px #4a90e2) brightness(1.2);
+    transform: scale(1.15);
+    transition: all 0.2s ease;
+}
+
+/* 选择计数器样式 */
+#selectionCount {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(74, 144, 226, 0.95);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 10000;
+    font-size: 0.9rem;
+}
+
+
+/* Layer Hidden State */
+.layer-item.layer-hidden {
+    opacity: 0.5;
+}
+.layer-item.layer-hidden .layer-name {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Custom Group Selection Mode */
+body.selection-mode * {
+    cursor: crosshair !important;
+}
+.selection-highlight .marker-pin {
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.6) !important;
+    transform: scale(1.15);
+    transition: all 0.2s;
+}
+
+
+/* ==== Radius Rings Configuration ==== */
+.section-hint {
+    font-size: 0.8rem;
+    color: #888;
+    margin: -8px 0 12px 0;
+}
+
+.radius-rings-config {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.radius-ring-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.radius-ring-option:hover {
+    background: rgba(22, 119, 255, 0.1);
+    border-color: rgba(22, 119, 255, 0.3);
+}
+
+.radius-ring-option.selected {
+    background: rgba(22, 119, 255, 0.2);
+    border-color: #1677FF;
+    color: #1677FF;
+}
+
+.radius-ring-option input[type="checkbox"] {
+    display: none;
+}
+
+.radius-ring-option .radius-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.radius-ring-option.selected .radius-label {
+    color: #1677FF;
+}
+
+.radius-ring-option::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.radius-ring-option.selected::before {
+    background: #1677FF;
+    border-color: #1677FF;
+    box-shadow: inset 0 0 0 2px rgba(30, 30, 30, 0.8);
+}
+
 
 /* === table-view-styles.css === */
 /* ==== Table View Panel ==== */
@@ -5419,6 +6113,24 @@ body:has(.table-view-panel.open) .floating-btn {
         <!-- 面板内容 -->
         <div class="panel-content">
 
+            <!-- 主要操作区（置顶） -->
+            <div class="primary-actions-group"
+                style="padding: 0 12px 12px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;">
+                <button id="toggleLayerPanelBtn" class="btn-primary" onclick="toggleLayerPanel()"
+                    style="width:100%; margin-bottom: 8px;">
+                    <i class="fa-solid fa-layer-group"></i> 显示图层面板
+                </button>
+                <button id="clearAllLayersBtn" class="btn-danger" onclick="clearAllLayersWithConfirm()"
+                    style="width:100%; margin-bottom: 8px;">
+                    <i class="fa-solid fa-trash-can"></i> 清空所有图层
+                </button>
+                <button id="toggleClusterBtn" class="btn-secondary" onclick="toggleClusterMode(!clusterEnabled)"
+                    style="width:100%; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-circle-nodes"></i> 点聚合</span>
+                    <span id="clusterStatusText" style="font-size: 0.8rem; opacity: 0.8;">关闭</span>
+                </button>
+            </div>
+
             <!-- 搜索与定位（默认展开） -->
             <div class="accordion-section" id="accordion-search">
                 <div class="accordion-header" onclick="toggleAccordion('search')">
@@ -5495,6 +6207,7 @@ body:has(.table-view-panel.open) .floating-btn {
                     <button id="exportBtn" class="btn-secondary">
                         <i class="fa-solid fa-file-csv"></i> 导出 CSV
                     </button>
+
                 </div>
             </div>
 
@@ -5548,9 +6261,7 @@ body:has(.table-view-panel.open) .floating-btn {
                         </button>
                     </div>
                     <div class="control-group">
-                        <button id="toggleLayerPanelBtn" class="btn-secondary" onclick="toggleLayerPanel()">
-                            <i class="fa-solid fa-layer-group"></i> 显示图层面板
-                        </button>
+
                     </div>
                     <div class="control-group">
                         <label for="markerIconSelect">标记图标样式</label>
@@ -5561,6 +6272,22 @@ body:has(.table-view-panel.open) .floating-btn {
                             <option value="orange">橙色标记</option>
                             <option value="violet">紫色标记</option>
                             <option value="grey">灰色标记</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="basemapSelect">底图选择</label>
+                        <select id="basemapSelect" onchange="switchBaseLayer(this.value)">
+                            <optgroup label="国际通用">
+                                <option value="osm" selected>OpenStreetMap</option>
+                                <option value="satellite">卫星影像 (Esri)</option>
+                                <option value="dark">暗色主题 (CartoDB)</option>
+                                <option value="light">亮色主题 (CartoDB)</option>
+                                <option value="terrain">地形图 (OpenTopo)</option>
+                            </optgroup>
+                            <optgroup label="中国底图">
+                                <option value="amap">高德地图</option>
+                                <option value="amapSatellite">高德卫星</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="control-group checkbox-row">
@@ -5607,6 +6334,13 @@ body:has(.table-view-panel.open) .floating-btn {
                 </div>
                 <div class="layer-section-content">
                     <div id="layerList" class="layer-list-scroll"></div>
+                    <!-- 底部清空按钮 -->
+                    <div style="padding: 12px; border-top: 1px solid var(--border-glass);">
+                        <button class="btn-danger" onclick="clearAllLayersWithConfirm()"
+                            style="width:100%; font-size: 0.9rem;">
+                            <i class="fa-solid fa-trash-can"></i> 清除所有图层
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -5621,6 +6355,16 @@ body:has(.table-view-panel.open) .floating-btn {
                         <div id="layerDetailsContent" class="layer-details-content">
                             <div class="no-selection">点击图层查看详情</div>
                         </div>
+                    </div>
+                    <!-- 简易透明度控制 -->
+                    <div id="layerOpacityControl" class="layer-opacity-control"
+                        style="display:none; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #ccc;">
+                            透明度:
+                            <input type="range" id="layerOpacitySlider" min="0" max="1" step="0.1" value="0.6"
+                                style="flex:1;">
+                            <span id="layerOpacityValue">0.6</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -6023,6 +6767,15 @@ body:has(.table-view-panel.open) .floating-btn {
                     </div>
                 </div>
 
+                <!-- 范围圈设置 -->
+                <div class="property-section">
+                    <h3><i class="fa-solid fa-circle-dot"></i> 范围圈</h3>
+                    <p class="section-hint">显示以标记为中心的覆盖范围</p>
+                    <div id="radiusRingsConfig" class="radius-rings-config">
+                        <!-- JS 动态渲染 -->
+                    </div>
+                </div>
+
                 <!-- 自定义属性 -->
                 <div class="property-section">
                     <h3>自定义属性</h3>
@@ -6059,6 +6812,8 @@ body:has(.table-view-panel.open) .floating-btn {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Leaflet.draw JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" crossorigin=""></script>
+    <!-- Leaflet.markercluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"
         crossorigin="anonymous"></script>
@@ -6437,6 +7192,51 @@ class MarkerGroupManager {
         });
     }
 
+    // 启用管理器
+    enable() {
+        if (this.enabled) return;
+        this.enabled = true;
+        console.log('MarkerGroupManager enabled, rescanning layers...');
+
+        // 重新扫描 drawnItems 中的标记
+        if (this.drawnItems) {
+            this.drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    this.addMarker(layer);
+                }
+            });
+        }
+    }
+
+    // 禁用管理器
+    disable() {
+        if (!this.enabled) return;
+        this.enabled = false;
+        console.log('MarkerGroupManager disabled, restoring markers...');
+
+        // 恢复所有因分组而被隐藏的标记
+        this.groups.forEach(group => {
+            // Remove group marker
+            group.removeGroupMarker(this.map);
+            group.clearSpiderLegs(this.map);
+
+            // Show all child markers
+            group.markers.forEach(m => {
+                if (m._groupOriginalLatLng) {
+                    m.setLatLng(m._groupOriginalLatLng);
+                }
+                // 确保标记在地图上可见（如果它还在 drawnItems 中）
+                if (!this.map.hasLayer(m) && this.drawnItems.hasLayer(m)) {
+                    this.map.addLayer(m);
+                }
+            });
+        });
+
+        // 清空内部状态
+        this.groups.clear();
+        this.markerToGroup.clear();
+    }
+
     // 添加标记到管理器
     addMarker(marker) {
         if (!this.enabled) return;
@@ -6725,7 +7525,7 @@ function updateLayerStats() {
         });
     }
 
-    // 从 MarkerGroupManager 收集（包括收起状态的）
+    // 从 MarkerGroupManager 收集
     if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
         markerGroupManager.groups.forEach(group => {
             group.markers.forEach(marker => {
@@ -6733,6 +7533,28 @@ function updateLayerStats() {
                     markers.push(marker);
                 }
             });
+        });
+    }
+
+    // 从 MarkerClusterGroup 收集 (点聚合模式)
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        // cluster group might contain markers that are NOT in drawnItems?
+        // Usually cluster takes layers FROM drawnItems or directly added.
+        // We should iterate all recursive layers
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker && !markers.includes(layer)) {
+                markers.push(layer);
+            }
+        });
+    }
+
+    // 从 HiddenLayers 收集 (统计总数时包含隐藏?)
+    // 用户可能希望统计 "Total" assets.
+    if (typeof hiddenLayers !== 'undefined') {
+        hiddenLayers.forEach(layer => {
+            if (layer instanceof L.Marker && !markers.includes(layer)) {
+                markers.push(layer);
+            }
         });
     }
 
@@ -6770,6 +7592,7 @@ function updateLayerStats() {
             ${groupCount > 0 ? `<span class="stats-group-badge">${groupCount} 个坐标组</span>` : ''}
             ${customGroupCount > 0 ? `<span class="stats-group-badge custom">${customGroupCount} 个自定义组</span>` : ''}
         </div>
+        ${hiddenLayers.size > 0 ? `<div class="stats-hidden-info" style="font-size:0.8rem; opacity:0.7; margin-top:4px;">(包含 ${hiddenLayers.size} 个隐藏标记)</div>` : ''}
     `;
 
     if (typeEntries.length > 0) {
@@ -6928,6 +7751,11 @@ class CustomGroupManager {
         this.selectedMarkers.clear();
         document.body.classList.add('selection-mode');
 
+        // 禁用地图 boxZoom（防止冲突）
+        if (typeof map !== 'undefined' && map.boxZoom) {
+            map.boxZoom.disable();
+        }
+
         // 更新 UI
         const btn = document.getElementById('enterSelectionModeBtn');
         if (btn) {
@@ -6939,8 +7767,275 @@ class CustomGroupManager {
         const finishBtn = document.getElementById('finishSelectionBtn');
         if (finishBtn) finishBtn.style.display = 'block';
 
+        // 初始化框选
+        this._initBoxSelection();
+
+        // 绑定键盘事件
+        this._bindKeyboardEvents();
+
+        // 绑定标记点击事件
+        this._bindMarkerClicks();
+
         this._updateSelectionCount();
         console.log('Entered selection mode');
+
+        // 创建或显示选择模式提示条
+        this._showSelectionHint();
+
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage('✅ 已进入选择模式，点击标记选中');
+        }
+    }
+
+    _showSelectionHint() {
+        let hint = document.getElementById('selectionModeHint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'selectionModeHint';
+            hint.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(74, 144, 226, 0.95);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                font-size: 0.9rem;
+                font-weight: 500;
+            `;
+            document.body.appendChild(hint);
+        }
+
+        hint.innerHTML = `
+            <i class="fa-solid fa-hand-pointer"></i>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-weight: 600;">
+                    <span id="selectionCountInline" style="color: #2ecc71; margin-right: 8px; display: none;"></span>
+                    <span>点击选单个 | Ctrl+点击多选 | Shift+拖动框选 | ESC取消</span>
+                </div>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 8px;">
+                <button onclick="customGroupManager.exitSelectionMode()" 
+                    style="padding: 6px 14px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fa-solid fa-times"></i> 取消
+                </button>
+                <button onclick="customGroupManager.finishSelectionAndCreateGroup()" 
+                    style="padding: 6px 14px; background: #2ecc71; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fa-solid fa-check"></i> 完成创建
+                </button>
+            </div>
+        `;
+        hint.style.display = 'flex';
+    }
+
+    _hideSelectionHint() {
+        const hint = document.getElementById('selectionModeHint');
+        if (hint) hint.style.display = 'none';
+    }
+
+    // === 框选功能 === //
+    _initBoxSelection() {
+        this._boxSelectionLayer = null;
+        this._isBoxSelecting = false;
+        this._boxStartLatLng = null;
+
+        // 绑定地图鼠标事件
+        this._boxStartHandler = this._onBoxStart.bind(this);
+        this._boxMoveHandler = this._onBoxMove.bind(this);
+        this._boxEndHandler = this._onBoxEnd.bind(this);
+
+        map.on('mousedown', this._boxStartHandler);
+        map.on('mousemove', this._boxMoveHandler);
+        map.on('mouseup', this._boxEndHandler);
+    }
+
+    _onBoxStart(e) {
+        // 仅在按住 Shift 且在选择模式时启动框选
+        if (!this.selectionMode || !e.originalEvent.shiftKey) return;
+
+        L.DomEvent.preventDefault(e.originalEvent);
+        this._isBoxSelecting = true;
+        this._boxStartLatLng = e.latlng;
+
+        // 创建选区矩形（视觉反馈）
+        this._boxSelectionLayer = L.rectangle([e.latlng, e.latlng], {
+            color: '#4a90e2',
+            weight: 2,
+            fillColor: '#4a90e2',
+            fillOpacity: 0.1,
+            dashArray: '5, 5'
+        }).addTo(map);
+    }
+
+    _onBoxMove(e) {
+        if (!this._isBoxSelecting) return;
+
+        // 更新矩形范围（实时显示选区）
+        const bounds = L.latLngBounds(this._boxStartLatLng, e.latlng);
+        this._boxSelectionLayer.setBounds(bounds);
+    }
+
+    _onBoxEnd(e) {
+        if (!this._isBoxSelecting) return;
+
+        const bounds = L.latLngBounds(this._boxStartLatLng, e.latlng);
+
+        // 选中范围内的所有标记
+        this._selectMarkersInBounds(bounds);
+
+        // 清理选区矩形
+        if (this._boxSelectionLayer) {
+            map.removeLayer(this._boxSelectionLayer);
+            this._boxSelectionLayer = null;
+        }
+        this._isBoxSelecting = false;
+        this._boxStartLatLng = null;
+    }
+
+    _selectMarkersInBounds(bounds) {
+        const selectMarker = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+            if (marker._isGroupMarker) return; // 跳过组标记
+
+            if (bounds.contains(marker.getLatLng())) {
+                if (!this.selectedMarkers.has(marker)) {
+                    this.selectedMarkers.add(marker);
+                    this._addSelectionHighlight(marker);
+                }
+            }
+        };
+
+        // 遍历所有标记容器
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(selectMarker);
+        }
+        if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+            markerClusterGroup.eachLayer(selectMarker);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(selectMarker);
+            });
+        }
+
+        this._updateSelectionCount();
+    }
+
+    _cleanupBoxSelection() {
+        if (this._boxSelectionLayer) {
+            map.removeLayer(this._boxSelectionLayer);
+            this._boxSelectionLayer = null;
+        }
+
+        // 解绑事件
+        if (this._boxStartHandler) {
+            map.off('mousedown', this._boxStartHandler);
+            map.off('mousemove', this._boxMoveHandler);
+            map.off('mouseup', this._boxEndHandler);
+        }
+    }
+
+    // === 键盘事件 === //
+    _bindKeyboardEvents() {
+        this._escHandler = (e) => {
+            if (e.key === 'Escape' && this.selectionMode) {
+                this.exitSelectionMode();
+            }
+        };
+        document.addEventListener('keydown', this._escHandler);
+    }
+
+    _unbindKeyboardEvents() {
+        if (this._escHandler) {
+            document.removeEventListener('keydown', this._escHandler);
+            this._escHandler = null;
+        }
+    }
+
+    // 绑定所有标记的点击事件
+    _bindMarkerClicks() {
+        const self = this;
+
+        const bindHandler = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+
+            // 保存原始点击处理器
+            if (!marker._originalClickHandlers) {
+                marker._originalClickHandlers = marker._events?.click?.slice() || [];
+            }
+
+            // 添加选择模式点击处理器
+            marker._groupSelectionHandler = function (e) {
+                if (self.selectionMode) {
+                    L.DomEvent.stopPropagation(e);
+
+                    // Ctrl/Cmd 键：切换选中（多选）
+                    if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+                        self.toggleMarkerSelection(marker);
+                    } else {
+                        // 普通点击：清空其他，仅选当前（单选）
+                        self.selectedMarkers.forEach(m => {
+                            if (m !== marker) self._removeSelectionHighlight(m);
+                        });
+                        self.selectedMarkers.clear();
+                        self.selectedMarkers.add(marker);
+                        self._addSelectionHighlight(marker);
+                        self._updateSelectionCount();
+                    }
+                }
+            };
+            marker.on('click', marker._groupSelectionHandler);
+        };
+
+        // 绑定 drawnItems 中的标记
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(bindHandler);
+        }
+
+        // 绑定 markerClusterGroup 中的标记
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(bindHandler);
+        }
+
+        // 绑定 markerGroupManager 中的标记
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(bindHandler);
+            });
+        }
+    }
+
+    // 解绑标记点击事件
+    _unbindMarkerClicks() {
+        const unbindHandler = (marker) => {
+            if (!(marker instanceof L.Marker)) return;
+
+            // 移除选择模式处理器
+            if (marker._groupSelectionHandler) {
+                marker.off('click', marker._groupSelectionHandler);
+                delete marker._groupSelectionHandler;
+            }
+        };
+
+        if (typeof drawnItems !== 'undefined') {
+            drawnItems.eachLayer(unbindHandler);
+        }
+
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(unbindHandler);
+        }
+
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(unbindHandler);
+            });
+        }
     }
 
     exitSelectionMode() {
@@ -6948,12 +8043,36 @@ class CustomGroupManager {
         this.selectedMarkers.clear();
         document.body.classList.remove('selection-mode');
 
+        // 恢复地图 boxZoom
+        if (typeof map !== 'undefined' && map.boxZoom) {
+            map.boxZoom.enable();
+        }
+
+        // 清理框选事件
+        this._cleanupBoxSelection();
+
+        // 解绑键盘事件
+        this._unbindKeyboardEvents();
+
+        // 解绑标记点击事件
+        this._unbindMarkerClicks();
+
         // 清除所有标记的选中态
+        const clearHighlights = (layer) => {
+            if (layer instanceof L.Marker) {
+                this._removeSelectionHighlight(layer);
+            }
+        };
+
         if (typeof drawnItems !== 'undefined') {
-            drawnItems.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
-                    this._removeSelectionHighlight(layer);
-                }
+            drawnItems.eachLayer(clearHighlights);
+        }
+        if (typeof markerClusterGroup !== 'undefined') {
+            markerClusterGroup.eachLayer(clearHighlights);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.groups.forEach(group => {
+                group.markers.forEach(clearHighlights);
             });
         }
 
@@ -6969,6 +8088,9 @@ class CustomGroupManager {
 
         const countSpan = document.getElementById('selectionCount');
         if (countSpan) countSpan.style.display = 'none';
+
+        // 隐藏提示条
+        this._hideSelectionHint();
 
         console.log('Exited selection mode');
     }
@@ -7018,10 +8140,20 @@ class CustomGroupManager {
     }
 
     _updateSelectionCount() {
+        const count = this.selectedMarkers.size;
+        const countText = `已选 ${count}`;
+
         const countSpan = document.getElementById('selectionCount');
         if (countSpan) {
-            countSpan.textContent = `已选择 ${this.selectedMarkers.size} 个标记`;
-            countSpan.style.display = this.selectedMarkers.size > 0 ? 'block' : 'none';
+            countSpan.textContent = countText;
+            countSpan.style.display = count > 0 ? 'block' : 'none';
+        }
+
+        // 更新提示条中的计数
+        const inlineCount = document.getElementById('selectionCountInline');
+        if (inlineCount) {
+            inlineCount.textContent = count > 0 ? countText : '';
+            inlineCount.style.display = count > 0 ? 'inline-block' : 'none';
         }
     }
 
@@ -7068,6 +8200,22 @@ class CustomGroupManager {
 
         console.log(`Created group "${groupName}" with ${group.getCount()} members`);
         return group;
+    }
+
+    // 完成选择并创建组（带提示）
+    finishSelectionAndCreateGroup() {
+        if (this.selectedMarkers.size === 0) {
+            alert('请先选择至少一个标记');
+            return;
+        }
+
+        const groupName = prompt(`请输入组名称（已选择 ${this.selectedMarkers.size} 个标记）：`, `自定义组 ${this.groups.size + 1}`);
+        if (groupName && groupName.trim()) {
+            this.createGroup(groupName.trim());
+            if (typeof showBriefMessage === 'function') {
+                showBriefMessage(`✅ 已创建组：${groupName}`);
+            }
+        }
     }
 
     deleteGroup(groupId) {
@@ -7732,6 +8880,36 @@ class TimelineManager {
         return true;
     }
 
+    duplicateSnapshot(snapshotId) {
+        const source = this.snapshots.get(snapshotId);
+        if (!source) return false;
+
+        const newName = `${source.name} (副本)`;
+        const newSnapshot = new Snapshot(newName);
+        // Snapshot constructor automatically generates new ID
+
+        // Deep copy data
+        if (source.layers) {
+            newSnapshot.layers = JSON.parse(JSON.stringify(source.layers));
+        }
+        if (source.customGroups) {
+            newSnapshot.customGroups = JSON.parse(JSON.stringify(source.customGroups));
+        }
+        if (source.viewState) {
+            newSnapshot.viewState = { ...source.viewState };
+        }
+
+        this.snapshots.set(newSnapshot.snapshotId, newSnapshot);
+        this._saveToStorage();
+        this._renderTimelineUI();
+
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage(`✅ 已创建副本：${newName}`);
+        }
+
+        return true;
+    }
+
     renameSnapshot(snapshotId, newName) {
         const snapshot = this.snapshots.get(snapshotId);
         if (!snapshot) return false;
@@ -7799,6 +8977,9 @@ class TimelineManager {
                     <div class="timeline-actions">
                         <button onclick="event.stopPropagation(); timelineManager.renameSnapshotPrompt('${snapshot.snapshotId}')" title="重命名">
                             <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); timelineManager.duplicateSnapshot('${snapshot.snapshotId}')" title="创建副本">
+                            <i class="fa-solid fa-copy"></i>
                         </button>
                         <button onclick="event.stopPropagation(); timelineManager.deleteSnapshot('${snapshot.snapshotId}')" title="删除" class="delete">
                             <i class="fa-solid fa-trash"></i>
@@ -8432,6 +9613,14 @@ console.log('Dashboard Panel module loaded');
 const AMAP_API_KEY = 'f9ef1f8a897389df48a43e18ac4660d8';
 const AMAP_GEOCODE_URL = 'https://restapi.amap.com/v3/geocode/geo';
 
+// ==== 底图服务 API Key（需自行申请填入）==== //
+// 高德地图 Web 服务 Key（用于底图瓦片）
+const AMAP_MAP_KEY = '';
+// 腾讯地图 Key
+const TENCENT_MAP_KEY = '';
+// 天地图 Token（需在 https://console.tianditu.gov.cn/ 注册）
+const TIANDITU_TOKEN = '';
+
 // ==== Initialize Map ==== //
 const map = L.map('map', {
     zoomControl: false  // 禁用默认位置的缩放控件
@@ -8442,8 +9631,11 @@ L.control.zoom({
     position: 'bottomleft'
 }).addTo(map);
 
-// Base layers - expanded map options
+// ==== Base Layers Configuration ==== //
+// 底图配置（支持 OSM、卫星图、CartoDB、高德、腾讯、天地图等）
+// 注意：高德/腾讯使用 GCJ-02 坐标系，与 WGS-84 有偏移
 const baseLayers = {
+    // === 国际通用底图 === //
     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
@@ -8464,16 +9656,62 @@ const baseLayers = {
         attribution: '&copy; OpenTopoMap',
         maxZoom: 17,
     }),
-    stamen: L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
-        attribution: '&copy; Stamen Design',
-        maxZoom: 20,
+
+    // === 中国底图服务（GCJ-02 坐标系）=== //
+    // 高德地图 - 标准地图
+    amap: L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+        subdomains: ['1', '2', '3', '4'],
+        maxZoom: 18,
+        attribution: '© 高德地图'
     }),
-    carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CartoDB',
-        maxZoom: 19,
+    // 高德地图 - 卫星图
+    amapSatellite: L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
+        subdomains: ['1', '2', '3', '4'],
+        maxZoom: 18,
+        attribution: '© 高德地图'
     }),
+    // 腾讯地图 - 标准地图（使用 TMS 标准，y 轴翻转）
+    tencent: L.tileLayer('https://rt{s}.map.gtimg.com/tile?z={z}&x={x}&y={reverseY}&type=vector&styleid=0', {
+        subdomains: ['0', '1', '2', '3'],
+        maxZoom: 18,
+        attribution: '© 腾讯地图'
+    }),
+    // 天地图 - 矢量底图（WGS-84 坐标系，国产标准）
+    tianditu: L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=' + (TIANDITU_TOKEN || 'your_token'), {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        maxZoom: 18,
+        attribution: '© 天地图'
+    }),
+    // 天地图 - 影像底图
+    tiandituSatellite: L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}&tk=' + (TIANDITU_TOKEN || 'your_token'), {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        maxZoom: 18,
+        attribution: '© 天地图'
+    })
 };
-baseLayers.osm.addTo(map);
+
+// 当前底图（默认 OSM）
+let currentBaseLayer = baseLayers.osm;
+currentBaseLayer.addTo(map);
+
+// 底图切换函数
+function switchBaseLayer(layerKey) {
+    if (!baseLayers[layerKey]) {
+        console.warn('未知的底图类型:', layerKey);
+        return;
+    }
+    // 移除当前底图
+    if (currentBaseLayer) {
+        map.removeLayer(currentBaseLayer);
+    }
+    // 添加新底图
+    currentBaseLayer = baseLayers[layerKey];
+    currentBaseLayer.addTo(map);
+    // 确保底图在最底层
+    currentBaseLayer.bringToBack();
+    console.log('已切换底图:', layerKey);
+}
+window.switchBaseLayer = switchBaseLayer;
 
 
 // ==== FontAwesome Icon Marker System ==== //
@@ -8640,6 +9878,230 @@ function getMarkerIcon(properties) {
 // ==== Leaflet.draw Setup ==== //
 const drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
+
+// ==== Marker Clustering Setup ==== //
+// 使用 Leaflet.markercluster 实现标记聚合
+// 当聚合数量 >= 500 时显示 "500+"
+// 默认关闭，用户可通过复选框开启
+let clusterEnabled = false;  // 聚合功能开关（默认关闭）
+
+const markerClusterGroup = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 60,  // 聚合半径（像素），调小以提高缩放后分离速度
+    spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 16,  // 在此缩放级别停止聚合（调低以便更早分离）
+    chunkedLoading: true,  // 分块加载，提升大数据量性能
+    animate: true,
+    animateAddingMarkers: false,  // 禁用添加动画提升性能
+
+    // 自定义聚合图标（实现 500+ 显示逻辑）
+    iconCreateFunction: function (cluster) {
+        const count = cluster.getChildCount();
+        // 500+ 显示逻辑
+        const displayCount = count >= 500 ? '500+' : count.toString();
+
+        // 根据数量确定大小样式
+        let sizeClass = 'cluster-small';
+        let size = 40;
+        if (count >= 100 && count < 500) {
+            sizeClass = 'cluster-medium';
+            size = 50;
+        } else if (count >= 500) {
+            sizeClass = 'cluster-large';
+            size = 60;
+        }
+
+        return L.divIcon({
+            html: `<div class="cluster-icon ${sizeClass}"><span>${displayCount}</span></div>`,
+            className: 'marker-cluster-custom',
+            iconSize: L.point(size, size)
+        });
+    }
+});
+// 默认不添加到地图（关闭状态）
+// map.addLayer(markerClusterGroup);
+
+// 全局暴露聚合组，供其他模块使用
+window.markerClusterGroup = markerClusterGroup;
+
+// ==== 聚合模式切换函数 ==== //
+// 全局分组模式状态
+let activeGroupingMode = 'marker-group'; // 'none', 'marker-group', 'cluster'
+window.activeGroupingMode = activeGroupingMode;
+// 隐藏的图层集合
+const hiddenLayers = new Set();
+window.hiddenLayers = hiddenLayers;
+
+// ==== 聚合模式切换函数 ==== //
+function toggleClusterMode(enabled) {
+    const checkEl = document.getElementById('enableClusterCheck');
+
+    // 检查与标记组的互斥冲突
+    if (enabled && activeGroupingMode === 'marker-group') {
+        const confirmMsg = '启用点聚合后，将关闭并禁用当前的『标记组（相近标记自动成组）』功能，二者无法同时使用。\n\n是否继续？';
+        if (!confirm(confirmMsg)) {
+            // 用户取消，无额外操作（因为按钮点击逻辑由调用者控制，或者我们需要手动重置 UI？）
+            // 实际上由于是 toggleClusterMode(!current) 调用，如果取消，状态应保持原样
+            return;
+        }
+    }
+
+    clusterEnabled = enabled;
+
+    if (enabled) {
+        // == 切换到点聚合模式 ==
+        activeGroupingMode = 'cluster';
+
+        // 1. 禁用自动标记组管理器
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.disable();
+        }
+
+        // 2. 禁用标记组 UI
+        toggleMarkerGroupUI(false);
+
+        // 3. 执行点聚合逻辑
+        // 将现有标记从 drawnItems 移动到 cluster
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markerClusterGroup.addLayer(layer);
+            }
+        });
+        // 移除 drawnItems 中的标记（非标记保留）
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                drawnItems.removeLayer(layer);
+            }
+        });
+        map.addLayer(markerClusterGroup);
+        showBriefMessage('✅ 点聚合已开启 (标记组已禁用)');
+    } else {
+        // == 关闭点聚合模式 ==
+        // 恢复为标记组模式（默认）
+        activeGroupingMode = 'marker-group';
+
+        // 1. 恢复标记到 drawnItems
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                drawnItems.addLayer(layer);
+            }
+        });
+        markerClusterGroup.clearLayers();
+        map.removeLayer(markerClusterGroup);
+
+        // 2. 启用自动标记组管理器
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.enable();
+        }
+
+        // 3. 启用标记组 UI
+        toggleMarkerGroupUI(true);
+
+        showBriefMessage('ℹ️ 点聚合已关闭 (标记组已恢复)');
+    }
+
+    // 更新按钮状态
+    const btn = document.getElementById('toggleClusterBtn');
+    const statusText = document.getElementById('clusterStatusText');
+    if (btn && statusText) {
+        if (enabled) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary'); // 开启时高亮
+            statusText.textContent = '已开启';
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary'); // 关闭时普通
+            statusText.textContent = '关闭';
+        }
+    }
+
+    updateLayerList();
+    console.log('Grouping Mode:', activeGroupingMode);
+}
+
+// 切换标记组 UI 的可用状态
+function toggleMarkerGroupUI(enabled) {
+    const btn = document.getElementById('enterSelectionModeBtn');
+    const section = document.querySelector('.custom-group-section');
+    const finishBtn = document.getElementById('finishSelectionBtn');
+
+    // 如果正在选择模式中且被禁用，强制退出选择模式
+    if (!enabled && typeof customGroupManager !== 'undefined' && customGroupManager.isSelectionMode) {
+        customGroupManager.exitSelectionMode();
+        if (finishBtn) finishBtn.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+    }
+
+    if (btn) {
+        btn.disabled = !enabled;
+        if (!enabled) {
+            btn.title = "当前已启用点聚合功能，标记组功能暂时不可用";
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            // 添加禁用类以便 CSS 处理
+            btn.classList.add('disabled-by-cluster');
+        } else {
+            btn.title = "";
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+            btn.classList.remove('disabled-by-cluster');
+        }
+    }
+
+    // 整个区域视觉反馈
+    if (section) {
+        if (!enabled) {
+            section.style.opacity = '0.6';
+            section.style.pointerEvents = 'none'; // 禁止交互
+        } else {
+            section.style.opacity = '';
+            section.style.pointerEvents = '';
+        }
+    }
+}
+window.toggleClusterMode = toggleClusterMode;
+
+// ==== 清空所有图层函数 ==== //
+function clearAllLayersWithConfirm() {
+    const layerCount = drawnItems.getLayers().length + markerClusterGroup.getLayers().length;
+    if (layerCount === 0) {
+        showBriefMessage('ℹ️ 当前没有图层可清空');
+        return;
+    }
+
+    if (confirm(`确定要清空所有 ${layerCount} 个图层吗？此操作不可撤销。`)) {
+        clearAllLayers();
+    }
+}
+window.clearAllLayersWithConfirm = clearAllLayersWithConfirm;
+
+function clearAllLayers() {
+    // 清空聚合层
+    markerClusterGroup.clearLayers();
+
+    // 清空 drawnItems
+    drawnItems.clearLayers();
+
+    // 清空 MarkerGroupManager
+    if (markerGroupManager) {
+        markerGroupManager.clear();
+    }
+
+    // 清空隐藏图层
+    if (hiddenLayers) {
+        hiddenLayers.clear();
+    }
+
+    // 更新 UI
+    updateLayerList();
+    if (typeof updateFeatureTable === 'function') {
+        updateFeatureTable();
+    }
+
+    showBriefMessage('🗑️ 已清空所有图层');
+    console.log('All layers cleared');
+}
+window.clearAllLayers = clearAllLayers;
 
 // ==== Initialize Marker Group Manager ==== //
 let markerGroupManager = null;
@@ -8871,25 +10333,63 @@ updateSlotOptions();
 // ==== Helper Functions ==== //
 function updateLayerList() {
     layerList.innerHTML = '';
-    let index = 0;
     const processedLayers = new Set();
+    const groupedLayers = new Map(); // groupId -> [layers]
+    const uncategorizedLayers = [];
+    let totalCount = 0;
 
-    // 处理单个图层的函数
-    const processLayer = (layer) => {
-        if (layer._isGroupMarker) return; // 跳过组合标记
+    // Helper: Collect layers into groups
+    const collectLayer = (layer) => {
+        if (layer._isGroupMarker) return;
         if (processedLayers.has(layer)) return;
         processedLayers.add(layer);
+        totalCount++;
 
+        let assigned = false;
+        if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+            const groupIds = customGroupManager.markerToGroups.get(L.stamp(layer));
+            if (groupIds && groupIds.size > 0) {
+                groupIds.forEach(gid => {
+                    if (!groupedLayers.has(gid)) groupedLayers.set(gid, []);
+                    groupedLayers.get(gid).push(layer);
+                });
+                assigned = true;
+            }
+        }
+
+        if (!assigned) {
+            uncategorizedLayers.push(layer);
+        }
+    };
+
+    // Iterate all sources
+    drawnItems.eachLayer(collectLayer);
+    hiddenLayers.forEach(collectLayer);
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(g => g.markers.forEach(collectLayer));
+    }
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) collectLayer(layer);
+        });
+    }
+
+    // Helper: Render Single Layer Item
+    const renderLayerItem = (layer, container, index) => {
         const item = document.createElement('div');
         item.className = 'layer-item';
-        item.dataset.layerId = L.stamp(layer);
+        const layerId = L.stamp(layer);
+        item.dataset.layerId = layerId;
 
-        // 检查是否为当前选中
+        // selection check
         if (typeof selectionManager !== 'undefined' && selectionManager.isSelected(layer)) {
             item.classList.add('selected');
         }
+        if (layer._hidden) {
+            item.classList.add('layer-hidden');
+        }
 
-        // Determine type and icon
+        // Determine type/icon
         let type, iconClass;
         if (layer instanceof L.Marker) {
             type = '标记';
@@ -8913,40 +10413,118 @@ function updateLayerList() {
         }
 
         const props = layer.feature?.properties || {};
-        const name = props.名称 || props.name || layer.options.name || `${type} ${index + 1}`;
-        const color = props['marker-color'] || '#4a90e2';
+        const name = props.名称 || props.name || layer.options.name || `${type} ${index}`;
+        const color = props['marker-color'] || props.stroke || '#4a90e2';
 
-        // Get event count for markers
         const events = props.events || [];
         const eventBadge = layer instanceof L.Marker && events.length > 0
             ? `<span class="event-badge">${events.length}</span>`
             : '';
+        const eyeIcon = layer._hidden ? 'fa-eye-slash' : 'fa-eye';
+
+        // opacity
+        let currentOpacity = 1;
+        if (layer instanceof L.Marker) {
+            currentOpacity = layer.options.opacity !== undefined ? layer.options.opacity : 1;
+        } else {
+            currentOpacity = layer.options.fillOpacity !== undefined ? layer.options.fillOpacity : 0.6;
+        }
 
         item.innerHTML = `
-            <button class="layer-btn-main" onclick="focusOnLayer(${L.stamp(layer)})" title="点击定位到此图层">
+            <button class="layer-btn-main" data-action="focus" data-id="${layerId}" title="点击定位">
                 <span class="layer-icon" style="color: ${color}"><i class="${iconClass}"></i></span>
                 <span class="layer-name">${name}</span>
                 ${eventBadge}
                 <span class="layer-type">${type}</span>
             </button>
             <div class="layer-actions">
-                <button class="layer-btn" onclick="toggleLayerVisibility(${L.stamp(layer)})" title="隐藏/显示"><i class="fa-solid fa-eye"></i></button>
-                <button class="layer-btn" onclick="renameLayer(${L.stamp(layer)})" title="重命名"><i class="fa-solid fa-pen"></i></button>
-                <button class="layer-btn delete" onclick="deleteLayer(${L.stamp(layer)})" title="删除"><i class="fa-solid fa-trash"></i></button>
+                <button class="layer-btn" data-action="toggle" data-id="${layerId}" title="显隐"><i class="fa-solid ${eyeIcon}"></i></button>
+                <button class="layer-btn" data-action="opacity-toggle" data-id="${layerId}" title="透明度"><i class="fa-solid fa-sliders"></i></button>
+                <button class="layer-btn delete" data-action="delete" data-id="${layerId}" title="删除"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="layer-opacity-row" id="opacity-row-${layerId}" style="display:none; padding: 4px 12px; background: rgba(0,0,0,0.2); border-radius: 4px; margin-top: 4px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                     <i class="fa-solid fa-circle-half-stroke" style="font-size:0.8rem; opacity:0.7;"></i>
+                     <input type="range" class="opacity-slider" data-id="${layerId}" min="0" max="1" step="0.1" value="${currentOpacity}" style="flex:1; height:4px; cursor:pointer;">
+                     <span class="opacity-value" style="font-size:0.75rem; width:24px; text-align:right;">${currentOpacity}</span>
+                </div>
             </div>
         `;
-        layerList.appendChild(item);
-        index++;
+        container.appendChild(item);
     };
 
-    // 处理 drawnItems 中的图层
-    drawnItems.eachLayer(processLayer);
+    let itemIndex = 1;
 
-    // 处理分组中的标记（可能不在 drawnItems 中）
-    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
-        markerGroupManager.groups.forEach(group => {
-            group.markers.forEach(processLayer);
+    // 1. Render Groups
+    if (typeof customGroupManager !== 'undefined' && customGroupManager) {
+        customGroupManager.groups.forEach((group, gid) => {
+            const layers = groupedLayers.get(gid) || [];
+            // Show group even if empty? User might want to see empty groups to drag into.
+            // But drag-drop not supported yet. So hide if empty for now, OR show empty folder.
+
+            const header = document.createElement('div');
+            header.className = 'layer-group-header';
+            header.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid ${group.expanded ? 'fa-folder-open' : 'fa-folder'}" style="color:${group.color}"></i>
+                    <span>${group.groupName}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="badge">${layers.length}</span>
+                    <i class="fa-solid ${group.expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" style="font-size:0.8rem; opacity:0.6;"></i>
+                </div>
+            `;
+            header.onclick = () => {
+                group.expanded = !group.expanded;
+                updateLayerList(); // Refresh
+                // Persist expansion state in manager? Manager handles local storage on updates.
+                // We should theoretically trigger save?
+                // For performance, maybe not every click.
+            };
+            layerList.appendChild(header);
+
+            if (group.expanded) {
+                const content = document.createElement('div');
+                content.className = 'layer-group-content';
+                if (layers.length === 0) {
+                    content.innerHTML = '<div style="padding:8px 0 8px 30px; color:#aaa; font-style:italic; font-size:0.8rem;">(空组)</div>';
+                } else {
+                    layers.forEach(l => renderLayerItem(l, content, itemIndex++));
+                }
+                layerList.appendChild(content);
+            }
         });
+    }
+
+    // 2. Render Uncategorized
+    const showHeaderForUncategorized = groupedLayers.size > 0;
+    if (showHeaderForUncategorized && uncategorizedLayers.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'layer-group-header';
+        header.style.opacity = '0.7';
+        header.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-layer-group"></i> <span>未分组</span>
+            </div>
+            <span class="badge">${uncategorizedLayers.length}</span>
+        `;
+        // Uncategorized always expanded or collapsible?
+        // Let's make it static or default expanded.
+        layerList.appendChild(header);
+
+        const content = document.createElement('div');
+        content.className = 'layer-group-content';
+        uncategorizedLayers.forEach(l => renderLayerItem(l, content, itemIndex++));
+        layerList.appendChild(content);
+    } else {
+        // Flat list (no groups created yet)
+        uncategorizedLayers.forEach(l => renderLayerItem(l, layerList, itemIndex++));
+    }
+
+    // 更新图层数量显示
+    const layerCountEl = document.getElementById('layerCount');
+    if (layerCountEl) {
+        layerCountEl.textContent = totalCount;
     }
 
     updateGeoJSONEditor();
@@ -8956,6 +10534,92 @@ function updateLayerList() {
         updateLayerStats();
     }
 }
+
+// 图层列表事件委托处理
+document.addEventListener('DOMContentLoaded', () => {
+    const layerListEl = document.getElementById('layerList');
+    if (layerListEl) {
+        // 点击事件：处理按钮
+        layerListEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+
+            // 如果是 opacity-slider 触发的点击，不要阻止冒泡（可能影响拖拽？）
+            // 但这里主要处理 button [data-action]
+
+            const action = btn.dataset.action;
+            const id = parseInt(btn.dataset.id, 10);
+
+            // 阻止冒泡，避免触发 focus
+            e.preventDefault();
+            e.stopPropagation();
+
+            switch (action) {
+                case 'focus':
+                    focusOnLayer(id);
+                    break;
+                case 'toggle':
+                    toggleLayerVisibility(id);
+                    break;
+                case 'delete':
+                    if (confirm('确定删除此图层？此操作不可恢复。')) {
+                        deleteLayer(id);
+                    }
+                    break;
+                case 'opacity-toggle':
+                    const row = document.getElementById(`opacity-row-${id}`);
+                    if (row) {
+                        const isHidden = row.style.display === 'none';
+                        row.style.display = isHidden ? 'block' : 'none';
+                        // 切换按钮高亮状态
+                        if (isHidden) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    }
+                    break;
+            }
+        });
+
+        // 输入事件：处理透明度滑块
+        layerListEl.addEventListener('input', (e) => {
+            if (e.target.classList.contains('opacity-slider')) {
+                const id = parseInt(e.target.dataset.id, 10);
+                const value = parseFloat(e.target.value);
+                const valueSpan = e.target.nextElementSibling;
+                if (valueSpan) valueSpan.textContent = value;
+
+                const layer = drawnItems.getLayer(id) || (typeof markerClusterGroup !== 'undefined' ? markerClusterGroup.getLayer(id) : null);
+                // 也要在 MarkerGroupManager 中找
+                let targetLayer = layer;
+                if (!targetLayer && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+                    for (const [m, group] of markerGroupManager.markerToGroup) {
+                        if (L.stamp(m) === id) {
+                            targetLayer = m;
+                            break;
+                        }
+                    }
+                }
+
+                if (targetLayer) {
+                    if (targetLayer instanceof L.Marker) {
+                        targetLayer.setOpacity(value);
+                        // 保存到 props
+                        if (!targetLayer.feature) targetLayer.feature = { properties: {} };
+                        targetLayer.feature.properties.opacity = value;
+                        targetLayer.options.opacity = value;
+                    } else if (targetLayer.setStyle) {
+                        targetLayer.setStyle({ fillOpacity: value, opacity: value });
+                        targetLayer.options.fillOpacity = value;
+                        targetLayer.options.opacity = value;
+                        // 保存到 props
+                        if (!targetLayer.feature) targetLayer.feature = { properties: {} };
+                        targetLayer.feature.properties['fill-opacity'] = value;
+                        targetLayer.feature.properties['stroke-opacity'] = value;
+                    }
+                }
+            }
+        });
+    }
+});
 
 // Focus map on a specific layer
 function focusOnLayer(leafletId) {
@@ -8990,11 +10654,213 @@ function focusOnLayer(leafletId) {
         if (typeof openPropertyDrawer === 'function') {
             openPropertyDrawer(layer);
         }
+        // 隐藏透明度控制（标记不需要）
+        const opacityControl = document.getElementById('layerOpacityControl');
+        if (opacityControl) opacityControl.style.display = 'none';
     } else if (layer.getBounds) {
         map.fitBounds(layer.getBounds());
+        // 显示透明度控制
+        showOpacityControl(layer);
     }
 }
 
+// 显示透明度控制并绑定事件 (Moved to later section)
+
+// 透明度滑块事件
+document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('layerOpacitySlider');
+    const valueSpan = document.getElementById('layerOpacityValue');
+
+    if (slider) {
+        slider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (valueSpan) valueSpan.textContent = value;
+
+            if (currentOpacityLayer && currentOpacityLayer.setStyle) {
+                currentOpacityLayer.setStyle({
+                    fillOpacity: value,
+                    opacity: value
+                });
+            }
+        });
+    }
+});
+
+
+// ==== Layer Management Actions ==== //
+
+// Helper to find layer by ID in all containers
+function findLayerById(id) {
+    if (!id) return null;
+
+    // 1. drawnItems
+    let layer = drawnItems.getLayer(id);
+    if (layer) return { layer, container: drawnItems, type: 'drawnItems' };
+
+    // 2. hiddenLayers
+    for (const l of hiddenLayers) {
+        if (L.stamp(l) === id) return { layer: l, container: hiddenLayers, type: 'hidden' };
+    }
+
+    // 3. markerGroupManager
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        for (const [marker, group] of markerGroupManager.markerToGroup) {
+            if (L.stamp(marker) === id) {
+                return { layer: marker, container: markerGroupManager, type: 'markerGroup', group };
+            }
+        }
+    }
+
+    // 4. markerClusterGroup
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        layer = markerClusterGroup.getLayer(id);
+        if (layer) return { layer, container: markerClusterGroup, type: 'cluster' };
+    }
+
+    return null;
+}
+
+// Global Toggle Visibility Function
+function toggleLayerVisibility(leafletId) {
+    const result = findLayerById(leafletId);
+    if (!result) {
+        console.warn('Layer not found for visibility toggle:', leafletId);
+        return;
+    }
+
+    const { layer, container, type } = result;
+
+    // Toggle hidden state
+    layer._hidden = !layer._hidden;
+
+    if (layer._hidden) {
+        // Hide: Remove from map/container, add to hiddenLayers
+        if (type === 'drawnItems') {
+            drawnItems.removeLayer(layer);
+        } else if (type === 'cluster') {
+            markerClusterGroup.removeLayer(layer);
+        } else if (type === 'markerGroup') {
+            if (map.hasLayer(layer)) map.removeLayer(layer);
+        }
+
+        hiddenLayers.add(layer);
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+
+    } else {
+        // Show: Remove from hiddenLayers, add back to container
+        hiddenLayers.delete(layer);
+
+        if (type === 'drawnItems' || type === 'hidden') {
+            drawnItems.addLayer(layer);
+        } else if (type === 'cluster') {
+            markerClusterGroup.addLayer(layer);
+        }
+
+        if (layer instanceof L.Marker) {
+            layer.setOpacity(layer.options.opacity || 1);
+            layer.setInteractive(true);
+        }
+    }
+
+    // 同步范围圈显隐
+    if (layer._radiusRings) {
+        layer._radiusRings.forEach(circle => {
+            if (layer._hidden) {
+                if (map.hasLayer(circle)) map.removeLayer(circle);
+            } else {
+                if (!map.hasLayer(circle)) map.addLayer(circle);
+            }
+        });
+    }
+
+    updateLayerList();
+}
+window.toggleLayerVisibility = toggleLayerVisibility;
+
+// Global Delete Function
+function deleteLayer(leafletId) {
+    const result = findLayerById(leafletId);
+    if (!result) {
+        console.warn('Layer not found for deletion:', leafletId);
+        return;
+    }
+
+    const { layer, container, type, group } = result;
+
+    // 清除范围圈
+    if (typeof clearRadiusRings === 'function') {
+        clearRadiusRings(layer);
+    }
+
+    // Remove from everywhere
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+    if (hiddenLayers.has(layer)) hiddenLayers.delete(layer);
+
+    if (container === drawnItems) {
+        drawnItems.removeLayer(layer);
+    } else if (container === markerClusterGroup) {
+        if (markerClusterGroup.hasLayer(layer)) markerClusterGroup.removeLayer(layer);
+    } else if (type === 'markerGroup') {
+        if (group) {
+            const idx = group.markers.indexOf(layer);
+            if (idx > -1) group.markers.splice(idx, 1);
+            markerGroupManager.markerToGroup.delete(layer);
+            group.updateGroupMarker(map, drawnItems); // Refresh group
+        }
+    }
+
+    updateLayerList();
+
+    if (typeof updateFeatureTable === 'function') updateFeatureTable();
+    if (typeof updateLayerStats === 'function') updateLayerStats();
+
+    showBriefMessage('🗑️ 图层已删除');
+}
+window.deleteLayer = deleteLayer;
+
+// ==== Automated Test ==== //
+window.runAutomatedTest = async () => {
+    console.log('%c ==== Starting Automated Test ==== ', 'background: #222; color: #bada55');
+
+    const m1 = L.marker([39.9, 116.4], { title: 'Test1' }).addTo(drawnItems);
+    m1.feature = { properties: { name: 'Test1' } };
+    const m2 = L.marker([39.91, 116.41], { title: 'Test2' }).addTo(drawnItems);
+    m2.feature = { properties: { name: 'Test2' } };
+
+    updateLayerList();
+    console.log('Added 2 test markers.');
+
+    console.log('Testing Hide on m1:', m1);
+    toggleLayerVisibility(L.stamp(m1));
+
+    if (map.hasLayer(m1)) {
+        console.error('FAIL: m1 is still on map!');
+    } else if (!hiddenLayers.has(m1)) {
+        console.error('FAIL: m1 not found in hiddenLayers!');
+    } else {
+        console.log('PASS: m1 hidden successfully.');
+    }
+
+    console.log('Testing Delete on m2:', m2);
+    // Bypass confirm
+    const originalConfirm = window.confirm;
+    window.confirm = () => true;
+    try {
+        deleteLayer(L.stamp(m2));
+
+        if (map.hasLayer(m2)) {
+            console.error('FAIL: m2 still on map!');
+        } else if (drawnItems.hasLayer(m2)) {
+            console.error('FAIL: m2 still in drawnItems!');
+        } else {
+            console.log('PASS: m2 deleted successfully.');
+        }
+    } finally {
+        window.confirm = originalConfirm;
+    }
+
+    console.log('%c ==== Test Complete ==== ', 'background: #222; color: #bada55');
+}
 
 function updateGeoJSONEditor() {
     const geo = drawnItems.toGeoJSON();
@@ -9116,15 +10982,29 @@ function importGeoJSON(raw) {
                     bindMarkerPopup(layer);
                     bindMarkerContextMenu(layer);
 
-                    // Register with MarkerGroupManager for grouping
-                    if (markerGroupManager) {
-                        markerGroupManager.addMarker(layer);
+                    // 根据聚合开关决定添加位置
+                    if (clusterEnabled && typeof markerClusterGroup !== 'undefined') {
+                        markerClusterGroup.addLayer(layer);
                     } else {
-                        // Fallback if manager not ready
                         drawnItems.addLayer(layer);
+                        // 如果启用了标记组管理器，添加到其中
+                        if (typeof markerGroupManager !== 'undefined' && markerGroupManager && markerGroupManager.enabled) {
+                            markerGroupManager.addMarker(layer);
+                        }
+                    }
+
+                    // 恢复范围圈（如果有 radiusRings 数据）
+                    if (feature.properties && feature.properties.radiusRings && feature.properties.radiusRings.length > 0) {
+                        if (typeof updateRadiusRingsOnMap === 'function') {
+                            updateRadiusRingsOnMap(layer);
+                        }
                     }
                 } else {
                     // Non-marker layers go directly to drawnItems
+                    // 绑定点击事件
+                    if (typeof bindShapeEventHandlers === 'function') {
+                        bindShapeEventHandlers(layer);
+                    }
                     drawnItems.addLayer(layer);
                 }
             }
@@ -9466,6 +11346,9 @@ map.on(L.Draw.Event.CREATED, e => {
             drawnItems.addLayer(layer);
         }
     } else {
+        // 非标记图层（多边形、圆形、矩形、折线）
+        layer.feature = { properties: {} };
+        bindShapeEventHandlers(layer);
         drawnItems.addLayer(layer);
     }
 
@@ -9473,7 +11356,41 @@ map.on(L.Draw.Event.CREATED, e => {
     updateLabels();
 });
 
-map.on(L.Draw.Event.EDITED, () => updateLayerList());
+// 绑定形状图层的事件处理器
+function bindShapeEventHandlers(layer) {
+    layer.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+
+        // 使用 SelectionManager 统一管理选中状态
+        if (typeof selectionManager !== 'undefined') {
+            selectionManager.select(layer);
+        }
+
+        // 显示透明度控制
+        if (typeof showOpacityControl === 'function') {
+            showOpacityControl(layer);
+        }
+
+        // 高亮效果
+        layer._isSelected = true;
+        layer.setStyle({ weight: (layer.options.weight || 3) + 2 });
+    });
+}
+window.bindShapeEventHandlers = bindShapeEventHandlers;
+
+map.on(L.Draw.Event.EDITED, (e) => {
+    // 更新被编辑标记的范围圈位置
+    if (e.layers) {
+        e.layers.eachLayer(layer => {
+            if (layer instanceof L.Marker && layer._radiusRings) {
+                if (typeof updateRadiusRingsOnMap === 'function') {
+                    updateRadiusRingsOnMap(layer);
+                }
+            }
+        });
+    }
+    updateLayerList();
+});
 map.on(L.Draw.Event.DELETED, () => updateLayerList());
 
 exportGeoJSONBtn.addEventListener('click', exportGeoJSON);
@@ -9993,192 +11910,388 @@ if (loadSlotBtn && saveSlotSelect) {
 
 
 // ---- Legacy Features ---- //
-exportBtn.addEventListener('click', () => {
-    const rows = [];
-    drawnItems.eachLayer(l => {
-        if (l instanceof L.Marker) {
-            const ll = l.getLatLng();
-            rows.push(`${ll.lat},${ll.lng} `);
+
+// ==== 辅助函数：获取所有标记（drawnItems + markerClusterGroup）====
+function getAllMarkers() {
+    const markers = [];
+
+    // 从 drawnItems 收集
+    if (drawnItems) {
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markers.push(layer);
+            }
+        });
+    }
+
+    // 从 markerClusterGroup 收集
+    if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup) {
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                markers.push(layer);
+            }
+        });
+    }
+
+    return markers;
+}
+
+// ==== 辅助函数：列名映射 ====
+const COLUMN_ALIASES = {
+    longitude: ['经度', '经度 (Longitude)', 'Longitude', 'lng', 'longitude', 'lon', 'x'],
+    latitude: ['纬度', '纬度 (Latitude)', 'Latitude', 'lat', 'latitude', 'y'],
+    name: ['名称', '名称 (Name)', 'Name', 'name', '门店', '店名', '标记名称'],
+    type: ['类型', '类型 (Type)', 'Type', 'type', '业务类型', '分类'],
+    address: ['地址', '地址 (Address)', 'Address', 'address', '详细地址'],
+    layerName: ['图层名称', 'LayerName', 'layerName', 'layer', '分组']
+};
+
+function getValueByAliases(row, aliases) {
+    for (const alias of aliases) {
+        if (row[alias] !== undefined && row[alias] !== null && row[alias] !== '') {
+            return row[alias];
         }
+    }
+    return null;
+}
+
+// 技术内部字段（不导出）
+const INTERNAL_FIELDS = [
+    'marker-color', 'marker-symbol', 'marker-size',
+    '_originalLat', '_originalLng', '_leaflet_id',
+    'events', 'radiusRings' // radiusRings 单独处理
+];
+
+function isInternalField(key) {
+    return key.startsWith('_') || INTERNAL_FIELDS.includes(key);
+}
+
+// ==== 导出 CSV（仅坐标）====
+if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+        const markers = getAllMarkers();
+
+        if (markers.length === 0) {
+            alert('没有标记可导出');
+            return;
+        }
+
+        const rows = ['latitude,longitude,name,type,address'];
+        markers.forEach(marker => {
+            const ll = marker.getLatLng();
+            const props = marker.feature?.properties || {};
+            const name = (props.name || '').replace(/,/g, '，').replace(/"/g, '""');
+            const type = (props.type || '').replace(/,/g, '，').replace(/"/g, '""');
+            const address = (props.address || '').replace(/,/g, '，').replace(/"/g, '""');
+            rows.push(`${ll.lat},${ll.lng},"${name}","${type}","${address}"`);
+        });
+
+        const csvContent = rows.join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'coordinates.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
-    const csv = 'data:text/csv;charset=utf-8,latitude,longitude\n' + rows.join('\n');
-    const a = document.createElement('a');
-    a.setAttribute('href', encodeURI(csv));
-    a.setAttribute('download', 'coordinates.csv');
-    document.body.appendChild(a);
-    a.click();
-});
+}
 
 // ==== Excel Functions ==== //
 
-// Download Excel Template
-downloadTemplateBtn.addEventListener('click', () => {
-    const templateData = [
-        {
-            '经度 (Longitude)': 120.38,
-            '纬度 (Latitude)': 36.07,
-            '名称 (Name)': '示例标记',
-            '类型 (Type)': 'shop',
-            '地址 (Address)': '山东省青岛市市南区',
-            '标记颜色 (marker-color)': '#4a90e2',
-            '标记符号 (marker-symbol)': 'shop'
+// Download Excel Template（完整业务字段）
+if (downloadTemplateBtn) {
+    downloadTemplateBtn.addEventListener('click', () => {
+        const templateData = [
+            {
+                '经度 (Longitude)': 120.38,
+                '纬度 (Latitude)': 36.07,
+                '名称 (Name)': '示例门店',
+                '类型 (Type)': '加油站',
+                '地址 (Address)': '山东省青岛市市南区香港中路',
+                '图层名称 (LayerName)': '青岛片区',
+                '销售等级': 'A',
+                '加油笔数': 150,
+                '钱包会员比例': '35%',
+                '备注': '示例数据'
+            }
+        ];
+
+        const ws = XLSX.utils.json_to_sheet(templateData);
+
+        // 设置列宽
+        ws['!cols'] = [
+            { wch: 18 }, // 经度
+            { wch: 18 }, // 纬度
+            { wch: 20 }, // 名称
+            { wch: 12 }, // 类型
+            { wch: 35 }, // 地址
+            { wch: 15 }, // 图层名称
+            { wch: 10 }, // 销售等级
+            { wch: 12 }, // 加油笔数
+            { wch: 15 }, // 钱包会员比例
+            { wch: 20 }  // 备注
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+        XLSX.writeFile(wb, '地图标记导入模板.xlsx');
+    });
+}
+
+// Export to Excel with ALL fields
+if (exportExcelBtn) {
+    exportExcelBtn.addEventListener('click', () => {
+        const markers = getAllMarkers();
+
+        if (markers.length === 0) {
+            alert('没有标记可导出');
+            return;
         }
-    ];
 
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
-    XLSX.writeFile(wb, '地图标记导入模板.xlsx');
-});
+        // 收集所有唯一的属性键（用于动态列）
+        const allKeys = new Set();
+        const data = [];
 
-// Export to Excel with all fields
-exportExcelBtn.addEventListener('click', () => {
-    const data = [];
-    drawnItems.eachLayer(l => {
-        if (l instanceof L.Marker) {
-            const ll = l.getLatLng();
-            const props = l.feature?.properties || {};
-            data.push({
+        markers.forEach(marker => {
+            const ll = marker.getLatLng();
+            const props = marker.feature?.properties || {};
+
+            // 基础字段
+            const row = {
                 '经度 (Longitude)': ll.lng,
                 '纬度 (Latitude)': ll.lat,
                 '名称 (Name)': props.name || '',
                 '类型 (Type)': props.type || '',
                 '地址 (Address)': props.address || '',
-                '标记颜色 (marker-color)': props['marker-color'] || '#4a90e2',
-                '标记符号 (marker-symbol)': props['marker-symbol'] || 'default'
+                '图层名称 (LayerName)': props.layerName || props.group || ''
+            };
+
+            // 添加所有业务属性（排除内部字段）
+            Object.keys(props).forEach(key => {
+                if (!isInternalField(key) &&
+                    !['name', 'type', 'address', 'layerName', 'group'].includes(key)) {
+                    row[key] = props[key];
+                    allKeys.add(key);
+                }
             });
-        }
+
+            // 处理 radiusRings
+            if (props.radiusRings && Array.isArray(props.radiusRings)) {
+                row['范围圈 (radiusRings)'] = props.radiusRings.join(';');
+            }
+
+            data.push(row);
+        });
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '标记数据');
+        XLSX.writeFile(wb, '地图标记数据.xlsx');
+
+        console.log(`成功导出 ${data.length} 个标记`);
     });
+}
 
-    if (data.length === 0) {
-        alert('没有标记可导出');
-        return;
-    }
+// Import from Excel（保留所有业务字段）
+if (excelFileInput) {
+    excelFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '标记数据');
-    XLSX.writeFile(wb, '地图标记数据.xlsx');
-});
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
 
-// Import from Excel
-excelFileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = ev => {
-        try {
-            const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(firstSheet);
-
-            let addedCount = 0;
-            rows.forEach(row => {
-                // Support multiple column name formats
-                const lng = row['经度 (Longitude)'] || row['Longitude'] || row['lng'] || row['经度'];
-                const lat = row['纬度 (Latitude)'] || row['Latitude'] || row['lat'] || row['纬度'];
-
-                if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                if (rows.length === 0) {
+                    alert('Excel 文件为空或格式不正确');
                     return;
                 }
 
-                const properties = {
-                    name: row['名称 (Name)'] || row['Name'] || row['name'] || row['名称'] || '未命名',
-                    type: row['类型 (Type)'] || row['Type'] || row['type'] || row['类型'] || '',
-                    address: row['地址 (Address)'] || row['Address'] || row['address'] || row['地址'] || '',
-                    'marker-color': row['标记颜色 (marker-color)'] || row['marker-color'] || row['color'] || '#4a90e2',
-                    'marker-symbol': row['标记符号 (marker-symbol)'] || row['marker-symbol'] || row['symbol'] || 'default'
-                };
+                let addedCount = 0;
+                let errorCount = 0;
 
-                const icon = getMarkerIcon(properties);
-                const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
-                marker.feature = { properties };
+                rows.forEach((row, index) => {
+                    // 获取坐标
+                    const lng = getValueByAliases(row, COLUMN_ALIASES.longitude);
+                    const lat = getValueByAliases(row, COLUMN_ALIASES.latitude);
 
-                bindMarkerPopup(marker);
-                bindMarkerContextMenu(marker);
-                drawnItems.addLayer(marker);
-                addedCount++;
-            });
+                    if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                        errorCount++;
+                        console.warn(`第 ${index + 2} 行坐标无效，已跳过`);
+                        return;
+                    }
 
-            if (addedCount > 0) {
-                updateLayerList();
-                map.fitBounds(drawnItems.getBounds());
-                alert(`成功导入 ${addedCount} 个标记`);
-            } else {
-                alert('未找到有效的坐标数据');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Excel 文件解析失败：' + err.message);
-        }
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-// Enhanced Coord Import with PapaParse and Type Detection
-coordFileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function (results) {
-            const rows = results.data;
-            let addedCount = 0;
-
-            rows.forEach(row => {
-                let lat, lng;
-
-                const latKeys = ['纬度', 'Latitude', 'lat', 'latitude', '纬度 (Latitude)'];
-                const lngKeys = ['经度', 'Longitude', 'lng', 'longitude', '经度 (Longitude)'];
-
-                for (const key of latKeys) {
-                    if (row[key]) { lat = parseFloat(row[key]); break; }
-                }
-                for (const key of lngKeys) {
-                    if (row[key]) { lng = parseFloat(row[key]); break; }
-                }
-
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const name = row['门店'] || row['name'] || row['Name'] || row['名称'] || '未命名';
-                    const type = row['类型'] || row['type'] || row['Type'] || '';
-                    const address = row['地址'] || row['address'] || row['Address'] || '';
-
+                    // 构建属性对象（包含所有列）
                     const properties = {
-                        name: name,
-                        type: type,
-                        address: address
+                        name: getValueByAliases(row, COLUMN_ALIASES.name) || '未命名',
+                        type: getValueByAliases(row, COLUMN_ALIASES.type) || '',
+                        address: getValueByAliases(row, COLUMN_ALIASES.address) || '',
+                        layerName: getValueByAliases(row, COLUMN_ALIASES.layerName) || '',
+                        'marker-color': row['标记颜色'] || row['marker-color'] || '#4a90e2',
+                        'marker-symbol': row['标记符号'] || row['marker-symbol'] || 'default'
                     };
 
-                    const icon = getMarkerIcon(properties);
-                    const marker = L.marker([lat, lng], { icon: icon });
+                    // 添加所有额外的业务字段
+                    const knownAliases = new Set();
+                    Object.values(COLUMN_ALIASES).forEach(aliases => {
+                        aliases.forEach(a => knownAliases.add(a));
+                    });
+                    knownAliases.add('标记颜色');
+                    knownAliases.add('marker-color');
+                    knownAliases.add('标记符号');
+                    knownAliases.add('marker-symbol');
 
-                    marker.feature = { properties: properties };
+                    Object.keys(row).forEach(key => {
+                        if (!knownAliases.has(key) && row[key] !== undefined && row[key] !== '') {
+                            // 处理范围圈字符串
+                            if (key === '范围圈 (radiusRings)' || key === 'radiusRings') {
+                                const rings = String(row[key]).split(';').map(r => parseFloat(r)).filter(r => !isNaN(r));
+                                if (rings.length > 0) {
+                                    properties.radiusRings = rings;
+                                }
+                            } else {
+                                properties[key] = row[key];
+                            }
+                        }
+                    });
+
+                    const icon = getMarkerIcon(properties);
+                    const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                    marker.feature = {
+                        type: 'Feature',
+                        properties,
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [parseFloat(lng), parseFloat(lat)]
+                        }
+                    };
 
                     bindMarkerPopup(marker);
-
                     bindMarkerContextMenu(marker);
                     drawnItems.addLayer(marker);
                     addedCount++;
-                }
-            });
+                });
 
-            if (addedCount > 0) {
-                updateLayerList();
-                map.fitBounds(drawnItems.getBounds());
-                alert(`成功导入 ${addedCount} 个标记`);
-            } else {
-                alert('未找到有效的坐标数据，请检查 CSV 文件格式');
+                if (addedCount > 0) {
+                    updateLayerList();
+                    if (drawnItems.getLayers().length > 0) {
+                        map.fitBounds(drawnItems.getBounds());
+                    }
+                    let msg = `成功导入 ${addedCount} 个标记`;
+                    if (errorCount > 0) {
+                        msg += `\n（跳过 ${errorCount} 行无效数据）`;
+                    }
+                    alert(msg);
+                } else {
+                    alert('未找到有效的坐标数据。\n请确保 Excel 包含"经度"和"纬度"列（或 Longitude/Latitude）');
+                }
+            } catch (err) {
+                console.error('Excel 解析错误:', err);
+                alert('Excel 文件解析失败：' + err.message);
             }
-        },
-        error: function (err) {
-            alert('CSV 解析失败: ' + err.message);
-        }
+        };
+        reader.readAsArrayBuffer(file);
+        // Reset input to allow re-selecting the same file
+        e.target.value = '';
     });
-});
+}
+
+// Import from CSV（保留所有业务字段）
+if (coordFileInput) {
+    coordFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                const rows = results.data;
+
+                if (rows.length === 0) {
+                    alert('CSV 文件为空');
+                    return;
+                }
+
+                let addedCount = 0;
+                let errorCount = 0;
+
+                rows.forEach((row, index) => {
+                    const lng = getValueByAliases(row, COLUMN_ALIASES.longitude);
+                    const lat = getValueByAliases(row, COLUMN_ALIASES.latitude);
+
+                    if (!lng || !lat || isNaN(parseFloat(lng)) || isNaN(parseFloat(lat))) {
+                        errorCount++;
+                        return;
+                    }
+
+                    // 构建属性对象
+                    const properties = {
+                        name: getValueByAliases(row, COLUMN_ALIASES.name) || '未命名',
+                        type: getValueByAliases(row, COLUMN_ALIASES.type) || '',
+                        address: getValueByAliases(row, COLUMN_ALIASES.address) || '',
+                        layerName: getValueByAliases(row, COLUMN_ALIASES.layerName) || ''
+                    };
+
+                    // 添加所有额外字段
+                    const knownAliases = new Set();
+                    Object.values(COLUMN_ALIASES).forEach(aliases => {
+                        aliases.forEach(a => knownAliases.add(a));
+                    });
+
+                    Object.keys(row).forEach(key => {
+                        if (!knownAliases.has(key) && row[key] !== undefined && row[key] !== '') {
+                            properties[key] = row[key];
+                        }
+                    });
+
+                    const icon = getMarkerIcon(properties);
+                    const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon });
+                    marker.feature = {
+                        type: 'Feature',
+                        properties,
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [parseFloat(lng), parseFloat(lat)]
+                        }
+                    };
+
+                    bindMarkerPopup(marker);
+                    bindMarkerContextMenu(marker);
+                    drawnItems.addLayer(marker);
+                    addedCount++;
+                });
+
+                if (addedCount > 0) {
+                    updateLayerList();
+                    if (drawnItems.getLayers().length > 0) {
+                        map.fitBounds(drawnItems.getBounds());
+                    }
+                    let msg = `成功导入 ${addedCount} 个标记`;
+                    if (errorCount > 0) {
+                        msg += `\n（跳过 ${errorCount} 行无效数据）`;
+                    }
+                    alert(msg);
+                } else {
+                    alert('未找到有效的坐标数据。\n请确保 CSV 包含"经度"和"纬度"列（或 lat/lng）');
+                }
+            },
+            error: function (err) {
+                console.error('CSV 解析错误:', err);
+                alert('CSV 解析失败: ' + err.message);
+            }
+        });
+        // Reset input to allow re-selecting the same file
+        e.target.value = '';
+    });
+}
 
 if (addressFileInput) {
     addressFileInput.addEventListener('change', e => {
@@ -10365,34 +12478,196 @@ map.on('click', e => {
 
 // ==== Global Functions for Layer Management ==== //
 window.toggleLayerVisibility = function (id) {
-    drawnItems.eachLayer(l => {
+    let found = false;
+
+    // 查找图层（在 drawnItems 或 markerClusterGroup 中）
+    const findAndToggle = (l) => {
         if (l._leaflet_id === id) {
-            if (map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l);
-        }
-    });
-};
-window.renameLayer = function (id) {
-    drawnItems.eachLayer(l => {
-        if (l._leaflet_id === id) {
-            const newName = prompt('输入新名称：', l.options.name || '');
-            if (newName !== null) {
-                l.options.name = newName;
-                if (!l.feature) l.feature = { properties: {} };
-                l.feature.properties.name = newName;
-                updateLayerList();
-                updateLabels();
+            found = true;
+            if (map.hasLayer(l)) {
+                map.removeLayer(l);
+                l._hidden = true;
+            } else {
+                map.addLayer(l);
+                l._hidden = false;
+            }
+            // 更新图层列表中的图标状态
+            const layerItem = document.querySelector(`.layer-item[data-layer-id="${id}"]`);
+            if (layerItem) {
+                const eyeBtn = layerItem.querySelector('.layer-btn i.fa-eye, .layer-btn i.fa-eye-slash');
+                if (eyeBtn) {
+                    eyeBtn.className = l._hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+                }
+                if (l._hidden) {
+                    layerItem.classList.add('layer-hidden');
+                } else {
+                    layerItem.classList.remove('layer-hidden');
+                }
             }
         }
-    });
+    };
+
+    drawnItems.eachLayer(findAndToggle);
+
+    // 也检查 markerClusterGroup
+    if (!found && typeof markerClusterGroup !== 'undefined') {
+        markerClusterGroup.eachLayer(findAndToggle);
+    }
+
+    // 检查 markerGroupManager
+    if (!found && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            group.markers.forEach(findAndToggle);
+        });
+    }
 };
-window.deleteLayer = function (id) {
-    drawnItems.eachLayer(l => {
-        if (l._leaflet_id === id) {
-            drawnItems.removeLayer(l);
+window.renameLayer = function (id) {
+    let layer = drawnItems.getLayer(id);
+
+    if (!layer && typeof markerClusterGroup !== 'undefined') {
+        layer = markerClusterGroup.getLayer(id);
+    }
+
+    // 扩展搜索 GroupManager
+    if (!layer && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            if (layer) return;
+            const found = group.markers.find(m => L.stamp(m) == id);
+            if (found) layer = found;
+        });
+    }
+
+    if (layer) {
+        const currentName = layer.options.name || layer.feature?.properties?.name || layer.feature?.properties?.名称 || '';
+        const newName = prompt('输入新名称：', currentName);
+        if (newName !== null && newName.trim() !== '') {
+            layer.options.name = newName;
+            if (!layer.feature) layer.feature = { properties: {} };
+            layer.feature.properties.name = newName;
+            layer.feature.properties.名称 = newName;
             updateLayerList();
+            updateLabels();
+            if (typeof updateFeatureTable === 'function') updateFeatureTable();
         }
-    });
+    }
 };
+
+window.deleteLayer = function (id) {
+    let layerToDelete = drawnItems.getLayer(id);
+
+    if (!layerToDelete && typeof markerClusterGroup !== 'undefined') {
+        layerToDelete = markerClusterGroup.getLayer(id);
+    }
+
+    // 扩展搜索 GroupManager
+    if (!layerToDelete && typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+        markerGroupManager.groups.forEach(group => {
+            if (layerToDelete) return;
+            const found = group.markers.find(m => L.stamp(m) == id);
+            if (found) layerToDelete = found;
+        });
+    }
+
+    if (layerToDelete) {
+        // 从所有可能的容器中移除
+        if (drawnItems.hasLayer(layerToDelete)) {
+            drawnItems.removeLayer(layerToDelete);
+        }
+        if (typeof markerClusterGroup !== 'undefined' && markerClusterGroup.hasLayer(layerToDelete)) {
+            markerClusterGroup.removeLayer(layerToDelete);
+        }
+        if (typeof markerGroupManager !== 'undefined' && markerGroupManager) {
+            markerGroupManager.removeMarker(layerToDelete);
+        }
+        // 从地图移除 (防漏)
+        if (map.hasLayer(layerToDelete)) {
+            map.removeLayer(layerToDelete);
+        }
+
+        updateLayerList();
+        // 更新表格和看板
+        if (typeof updateFeatureTable === 'function') {
+            updateFeatureTable();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    } else {
+        console.error('Layer not found for deletion:', id);
+    }
+};
+
+// ==== Layer Style Editor Functions ==== //
+// 显示透明度控制并绑定事件
+let currentOpacityLayer = null;
+function showOpacityControl(layer) {
+    currentOpacityLayer = layer;
+    const control = document.getElementById('layerOpacityControl');
+    const slider = document.getElementById('layerOpacitySlider');
+    const valueSpan = document.getElementById('layerOpacityValue');
+    const detailsContent = document.getElementById('layerDetailsContent');
+
+    if (!control || !slider) return;
+
+    // 展开图层详情区域
+    const detailsSection = document.getElementById('layerDetailsSection');
+    if (detailsSection && detailsSection.classList.contains('collapsed')) {
+        detailsSection.classList.remove('collapsed');
+    }
+
+    // 更新详情及提示选中的图层
+    const name = layer.options.name || layer.feature?.properties?.name || '未命名图层';
+    if (detailsContent) {
+        detailsContent.innerHTML = `<div style="padding:10px; color:#4a90e2; font-weight:bold;">已选中: ${name}</div>`;
+    }
+
+    // 读取当前透明度
+    const currentOpacity = layer.options.fillOpacity !== undefined ? layer.options.fillOpacity : 0.6;
+    slider.value = currentOpacity;
+    valueSpan.textContent = currentOpacity;
+
+    control.style.display = 'block';
+}
+// 已移除旧版样式编辑器相关代码
+// 更新选中图层的样式
+function updateSelectedLayerStyle(property, value) {
+    if (!currentStyleLayer) return;
+
+    const styleUpdate = {};
+
+    switch (property) {
+        case 'fillColor':
+            styleUpdate.fillColor = value;
+            styleUpdate.fill = true;
+            break;
+        case 'strokeColor':
+            styleUpdate.color = value;
+            break;
+        case 'opacity':
+            styleUpdate.fillOpacity = parseFloat(value);
+            break;
+        case 'weight':
+            styleUpdate.weight = parseInt(value);
+            break;
+    }
+
+    // 应用样式
+    if (currentStyleLayer.setStyle) {
+        currentStyleLayer.setStyle(styleUpdate);
+    }
+
+    // 保存到 feature.properties
+    if (!currentStyleLayer.feature) {
+        currentStyleLayer.feature = { properties: {} };
+    }
+    const props = currentStyleLayer.feature.properties;
+
+    if (property === 'fillColor') props.fill = value;
+    if (property === 'strokeColor') props.stroke = value;
+    if (property === 'opacity') props['fill-opacity'] = parseFloat(value);
+    if (property === 'weight') props['stroke-width'] = parseInt(value);
+}
+window.updateSelectedLayerStyle = updateSelectedLayerStyle;
 
 // ==== Expose Context Menu Functions ==== //
 window.editMarkerProperties = editMarkerProperties;
@@ -12148,6 +14423,9 @@ function openPropertyDrawer(marker) {
     // Render custom properties
     renderCustomProperties(props);
 
+    // Render radius rings config
+    renderRadiusRingsConfig(props);
+
     // Show drawer with animation
     const drawer = document.getElementById('propertyDrawer');
     drawer.style.display = 'block';
@@ -12387,6 +14665,139 @@ window.copyCurrentCoordinates = copyCurrentCoordinates;
 window.changeIconFromDrawer = changeIconFromDrawer;
 window.openEventTrackerFromDrawer = openEventTrackerFromDrawer;
 window.deleteMarkerFromDrawer = deleteMarkerFromDrawer;
+
+// ==== Radius Rings Configuration ==== //
+const RADIUS_OPTIONS = [
+    { value: 1500, label: '1.5km' },
+    { value: 2000, label: '2km' },
+    { value: 3000, label: '3km' },
+    { value: 5000, label: '5km' },
+    { value: 10000, label: '10km' }
+];
+
+// 虚线样式配置（不同半径使用不同虚线模式）
+const RADIUS_DASH_PATTERNS = {
+    1500: '5,5',
+    2000: '10,5',
+    3000: '15,5',
+    5000: '20,5',
+    10000: '25,10'
+};
+
+// 渲染范围圈配置 UI
+function renderRadiusRingsConfig(props) {
+    const container = document.getElementById('radiusRingsConfig');
+    if (!container) return;
+
+    const currentRings = props.radiusRings || [];
+
+    container.innerHTML = RADIUS_OPTIONS.map(opt => {
+        const isSelected = currentRings.includes(opt.value);
+        return `
+            <label class="radius-ring-option ${isSelected ? 'selected' : ''}">
+                <input type="checkbox" 
+                       value="${opt.value}" 
+                       ${isSelected ? 'checked' : ''}
+                       onchange="toggleRadiusRing(${opt.value})" />
+                <span class="radius-label">${opt.label}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+// 切换单个半径的选中状态
+function toggleRadiusRing(radius) {
+    if (!currentEditingMarker) return;
+
+    // 确保 feature 结构存在
+    if (!currentEditingMarker.feature) {
+        currentEditingMarker.feature = { type: 'Feature', properties: {}, geometry: {} };
+    }
+    if (!currentEditingMarker.feature.properties) {
+        currentEditingMarker.feature.properties = {};
+    }
+
+    const props = currentEditingMarker.feature.properties;
+    let rings = props.radiusRings || [];
+
+    const index = rings.indexOf(radius);
+    if (index > -1) {
+        // 移除
+        rings.splice(index, 1);
+    } else {
+        // 添加并排序
+        rings.push(radius);
+        rings.sort((a, b) => a - b);
+    }
+
+    props.radiusRings = rings;
+
+    // 立即更新地图上的范围圈
+    updateRadiusRingsOnMap(currentEditingMarker);
+
+    // 更新 UI 选中状态
+    renderRadiusRingsConfig(props);
+}
+
+// 更新地图上的范围圈
+function updateRadiusRingsOnMap(marker) {
+    if (!marker || !(marker instanceof L.Marker)) return;
+
+    const latlng = marker.getLatLng();
+    const props = marker.feature?.properties || {};
+    const rings = props.radiusRings || [];
+
+    // 清除旧的范围圈
+    if (marker._radiusRings) {
+        marker._radiusRings.forEach(circle => {
+            if (map.hasLayer(circle)) {
+                map.removeLayer(circle);
+            }
+        });
+    }
+
+    // 创建新的范围圈
+    marker._radiusRings = rings.map(radius => {
+        const dashPattern = RADIUS_DASH_PATTERNS[radius] || '10,5';
+        const circle = L.circle(latlng, {
+            radius: radius,  // 使用 meters 单位
+            color: '#1677FF',
+            weight: 2,
+            opacity: 0.8,
+            fillColor: '#1677FF',
+            fillOpacity: 0.1,
+            dashArray: dashPattern,
+            interactive: false  // 不响应鼠标事件
+        });
+
+        // 如果标记未隐藏，则添加到地图
+        if (!marker._hidden) {
+            circle.addTo(map);
+        }
+
+        return circle;
+    });
+}
+
+// 清除标记的所有范围圈
+function clearRadiusRings(marker) {
+    if (!marker) return;
+
+    if (marker._radiusRings) {
+        marker._radiusRings.forEach(circle => {
+            if (map.hasLayer(circle)) {
+                map.removeLayer(circle);
+            }
+        });
+        marker._radiusRings = [];
+    }
+}
+
+// 全局暴露函数
+window.renderRadiusRingsConfig = renderRadiusRingsConfig;
+window.toggleRadiusRing = toggleRadiusRing;
+window.updateRadiusRingsOnMap = updateRadiusRingsOnMap;
+window.clearRadiusRings = clearRadiusRings;
 
 console.log('Property drawer system initialized');
 

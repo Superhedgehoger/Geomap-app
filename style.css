@@ -5106,6 +5106,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     transform: translateX(0);
     opacity: 1;
 }
+
 /* ==== Marker Clustering Styles ==== */
 /* 聚合点样式 - 与项目整体风格一致 */
 
@@ -5235,9 +5236,9 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 .style-row input[type="number"] {
     width: 60px;
     padding: 4px 8px;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     color: white;
     font-size: 0.9rem;
 }
@@ -5317,7 +5318,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     font-size: 0.7rem;
     color: #888;
     padding: 2px 6px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
 
@@ -5349,7 +5350,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 4px;
     color: #aaa;
@@ -5420,14 +5421,14 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 
 .event-card {
     padding: 12px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.2s;
 }
 
 .event-card:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .btn-add-event {
@@ -5521,7 +5522,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 
 .event-card {
     padding: 12px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-glass);
     border-radius: 8px;
     cursor: pointer;
@@ -5529,7 +5530,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 }
 
 .event-card:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-color: #4a90e2;
 }
 
@@ -5559,7 +5560,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 .tracker-section {
     margin-bottom: 16px;
     padding: 12px;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
 }
 
@@ -5577,7 +5578,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 
 .edit-view-header .btn-back {
     padding: 8px 12px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--border-glass);
     border-radius: 6px;
     color: var(--text-primary);
@@ -5587,7 +5588,7 @@ body.ui-collapsed .leaflet-top.leaflet-left {
 .edit-view-header input {
     flex: 1;
     padding: 8px 12px;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-glass);
     border-radius: 6px;
     color: white;
@@ -5623,18 +5624,22 @@ body.browse-mode-active .layer-actions {
     font-weight: 500;
     user-select: none;
 }
+
 .layer-group-header:hover {
     background: rgba(255, 255, 255, 0.08);
 }
+
 .layer-group-content {
     padding-left: 0;
 }
+
 .layer-group-content .layer-item {
     padding-left: 20px;
     border-left: 2px solid transparent;
 }
+
 .layer-group-content .layer-item:hover {
-     border-left-color: var(--primary-color);
+    border-left-color: var(--primary-color);
 }
 
 
@@ -5656,13 +5661,20 @@ body.selection-mode .map-container::before {
     font-size: 0.9rem;
     font-weight: 500;
     z-index: 10000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .marker-pin.selection-highlight {
@@ -5706,7 +5718,7 @@ body.selection-mode .custom-marker-icon {
     padding: 8px 16px;
     border-radius: 20px;
     font-weight: 500;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     z-index: 10000;
     font-size: 0.9rem;
 }
@@ -5716,6 +5728,7 @@ body.selection-mode .custom-marker-icon {
 .layer-item.layer-hidden {
     opacity: 0.5;
 }
+
 .layer-item.layer-hidden .layer-name {
     text-decoration: line-through;
     opacity: 0.7;
@@ -5725,6 +5738,7 @@ body.selection-mode .custom-marker-icon {
 body.selection-mode * {
     cursor: crosshair !important;
 }
+
 .selection-highlight .marker-pin {
     box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.6) !important;
     transform: scale(1.15);
@@ -5795,4 +5809,138 @@ body.selection-mode * {
     background: #1677FF;
     border-color: #1677FF;
     box-shadow: inset 0 0 0 2px rgba(30, 30, 30, 0.8);
+}
+
+/* ==== 绘图工具栏默认隐藏 ==== */
+/* 由左侧面板的"绘图工具"按钮控制显示/隐藏 */
+.leaflet-draw {
+    display: none;
+}
+
+/* ==== Screenshot Mode - Pure Map Only ==== */
+/* 外部面板隐藏（仍使用 body.screenshot-mode 控制） */
+body.screenshot-mode #controls,
+body.screenshot-mode #layerPanel,
+body.screenshot-mode #eventTrackerPanel,
+body.screenshot-mode #iconPickerModal,
+body.screenshot-mode #contextMenu,
+body.screenshot-mode .toast-container,
+body.screenshot-mode #briefMessageToast,
+body.screenshot-mode .floating-panel,
+body.screenshot-mode .table-view-toggle,
+body.screenshot-mode #tableViewContainer,
+body.screenshot-mode #featureTableContainer,
+body.screenshot-mode .screenshot-loading-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* 截图模式：强制隐藏地图内部的所有控件 - 直接针对 #map */
+#map.screenshot-mode .leaflet-control-container,
+#map.screenshot-mode .leaflet-draw-toolbar,
+#map.screenshot-mode .leaflet-bar,
+#map.screenshot-mode .leaflet-control,
+#map.screenshot-mode .leaflet-control-zoom,
+#map.screenshot-mode .leaflet-control-attribution {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Keep map visible */
+body.screenshot-mode #map {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Screenshot Loading Overlay */
+.screenshot-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+}
+
+.screenshot-loading-overlay .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #4a90e2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Screenshot Preview Modal */
+.screenshot-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.screenshot-preview-modal img {
+    max-width: 90vw;
+    max-height: 70vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+.screenshot-preview-modal .actions {
+    display: flex;
+    gap: 12px;
+}
+
+.screenshot-preview-modal button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.screenshot-preview-modal .btn-download {
+    background: #4a90e2;
+    color: white;
+}
+
+.screenshot-preview-modal .btn-download:hover {
+    background: #357abd;
+}
+
+.screenshot-preview-modal .btn-close {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.screenshot-preview-modal .btn-close:hover {
+    background: rgba(255, 255, 255, 0.2);
 }

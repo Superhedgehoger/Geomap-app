@@ -208,6 +208,7 @@ body:has(.table-view-panel.open) .floating-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    margin-right: 4px;
 }
 
 .table-locate-btn:hover {
@@ -216,6 +217,30 @@ body:has(.table-view-panel.open) .floating-btn {
 }
 
 .table-locate-btn i {
+    font-size: 0.8rem;
+}
+
+/* ==== Table Delete Button ==== */
+.table-delete-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-delete-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: scale(1.1);
+}
+
+.table-delete-btn i {
     font-size: 0.8rem;
 }
 

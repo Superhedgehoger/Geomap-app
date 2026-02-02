@@ -477,8 +477,16 @@ class MarkerGroupManager {
     // 清空所有数据
     clear() {
         this.groups.forEach(group => {
+            // 1. 移除组合图标和连接线
             group.removeGroupMarker(this.map);
             group.clearSpiderLegs(this.map);
+
+            // 2. 物理移除所有子标记（防止孤儿标记留在地图上）
+            group.markers.forEach(m => {
+                if (this.map.hasLayer(m)) {
+                    this.map.removeLayer(m);
+                }
+            });
         });
         this.groups.clear();
         this.markerToGroup.clear();

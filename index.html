@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GeoJSON 地图编辑器</title>
+
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         crossorigin="anonymous" />
@@ -30,7 +31,9 @@
     <div id="controls" class="panel">
         <div class="panel-header">
             <h2>地图控制</h2>
-            <button id="toggleToolbarBtn" class="btn-toggle-toolbar" title="收起/展开">
+            <button id="btn-map-control-collapse" class="btn-toggle-toolbar" title="收起/展开"
+                onclick="console.log('Inline Click P'); window.toggleControlsPanel()"
+                style="position: relative; z-index: 2001;">
                 <i class="fa-solid fa-chevron-left"></i>
             </button>
         </div>
@@ -60,18 +63,35 @@
             <!-- 主要操作区（置顶） -->
             <div class="primary-actions-group"
                 style="padding: 0 12px 12px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;">
-                <button id="toggleLayerPanelBtn" class="btn-primary" onclick="toggleLayerPanel()"
-                    style="width:100%; margin-bottom: 8px;">
+                <button id="btn-show-layer-panel" class="btn-primary"
+                    onclick="console.log('Inline Click Layer'); window.toggleLayerPanel()"
+                    style="width:100%; margin-bottom: 8px; position: relative; z-index: 2001;">
                     <i class="fa-solid fa-layer-group"></i> 显示图层面板
                 </button>
-                <button id="clearAllLayersBtn" class="btn-danger" onclick="clearAllLayersWithConfirm()"
-                    style="width:100%; margin-bottom: 8px;">
+                <button id="btn-clear-all-layers" class="btn-danger"
+                    onclick="console.log('Inline Click Clear'); window.clearAllLayersWithConfirm()"
+                    style="width:100%; margin-bottom: 8px; position: relative; z-index: 2001;">
                     <i class="fa-solid fa-trash-can"></i> 清空所有图层
                 </button>
                 <button id="toggleClusterBtn" class="btn-secondary" onclick="toggleClusterMode(!clusterEnabled)"
-                    style="width:100%; display: flex; justify-content: space-between; align-items: center;">
+                    style="width:100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span><i class="fa-solid fa-circle-nodes"></i> 点聚合</span>
                     <span id="clusterStatusText" style="font-size: 0.8rem; opacity: 0.8;">关闭</span>
+                </button>
+
+                <!-- 地图操作区 -->
+                <div class="map-control-buttons" style="display: flex; gap: 6px; margin-bottom: 8px;">
+                    <button class="btn-secondary" onclick="map.zoomIn()" title="放大地图" style="flex: 1;">
+                        <i class="fa-solid fa-plus"></i> 放大
+                    </button>
+                    <button class="btn-secondary" onclick="map.zoomOut()" title="缩小地图" style="flex: 1;">
+                        <i class="fa-solid fa-minus"></i> 缩小
+                    </button>
+                </div>
+                <button id="toggleDrawToolbarBtn" class="btn-secondary" onclick="toggleDrawToolbar()"
+                    style="width:100%; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-pencil"></i> 绘图工具</span>
+                    <span id="drawToolbarStatusText" style="font-size: 0.8rem; opacity: 0.8;">关闭</span>
                 </button>
             </div>
 
@@ -340,6 +360,27 @@
                     <span>当前: <strong id="currentArchiveName"></strong></span>
                     <button onclick="saveCurrentArchive()">保存</button>
                 </div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- 数据导出 -->
+            <div class="export-section">
+                <h3>📤 数据导出</h3>
+                <div class="export-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-export" onclick="exportToExcel()" style="flex: 1; min-width: 100px;">
+                        <i class="fa-solid fa-file-excel"></i> 导出 Excel
+                    </button>
+                    <button class="btn-export" onclick="exportToCSV()" style="flex: 1; min-width: 100px;">
+                        <i class="fa-solid fa-file-csv"></i> 导出 CSV
+                    </button>
+                </div>
+                <button class="btn-primary" onclick="shareMap()" style="width: 100%; margin-top: 8px;">
+                    <i class="fa-solid fa-camera"></i> 分享地图截图
+                </button>
+                <p style="font-size: 0.75rem; color: #888; margin-top: 6px;">
+                    导出所有标记及其全部属性字段
+                </p>
             </div>
 
             <hr class="divider">
@@ -780,6 +821,7 @@
     <script src="script.js"></script>
     <script src="property-editor.js"></script>
     <script src="table-view.js"></script>
+
 </body>
 
 </html>
