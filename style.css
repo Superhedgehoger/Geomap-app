@@ -5944,3 +5944,98 @@ body.screenshot-mode #map {
 .screenshot-preview-modal .btn-close:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* ==== Compact Map Labels (紧凑标签模式) ==== */
+/* 覆盖 Leaflet 默认 tooltip 样式 */
+.leaflet-tooltip.compact-map-label {
+    /* 深色半透明背景 + 背景模糊 */
+    background: rgba(30, 30, 30, 0.85) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+
+    /* 去除默认边框和箭头 */
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+
+    /* 文字颜色 */
+    color: #fff !important;
+
+    /* 紧凑 padding 和圆角 */
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+
+    /* 允许鼠标穿透，可点击底下的标记 */
+    pointer-events: none !important;
+
+    /* 禁用默认箭头 */
+    white-space: normal !important;
+}
+
+/* 移除 Leaflet tooltip 的箭头 */
+.leaflet-tooltip.compact-map-label::before {
+    display: none !important;
+}
+
+/* 标签内容容器 */
+.compact-map-label .label-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* 标签头部：名称 + 类型 */
+.compact-map-label .label-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+
+/* 名称：粗体、不换行 */
+.compact-map-label .label-name {
+    font-weight: bold;
+    font-size: 12px;
+    white-space: nowrap;
+    color: #fff;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 类型：小胶囊样式 */
+.compact-map-label .label-type {
+    display: inline-block;
+    background: #1677FF;
+    color: #fff;
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 地址：浅灰色、多行截断（最多3行） */
+.compact-map-label .label-address {
+    /* 基础字体设置 */
+    color: #ccc;
+    font-size: 10px;
+    line-height: 1.3;
+    /* 增加行高提升可读性 */
+    margin-top: 2px;
+
+    /* 核心：多行截断 (最多3行) */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    /* 限制为 3 行 */
+    -webkit-box-orient: vertical;
+    /* 垂直排列 */
+    overflow: hidden;
+    /* 超出隐藏 */
+
+    /* 布局设置 */
+    white-space: normal;
+    /* 允许文本换行 */
+    max-width: 160px;
+    /* 稍微放宽宽度，让换行更自然 */
+    text-overflow: ellipsis;
+}

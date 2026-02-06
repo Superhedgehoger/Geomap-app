@@ -352,6 +352,200 @@ function initHideDrawToolbar() {
 // 页面加载后延迟执行隐藏（确保 Leaflet.draw 已初始化）
 setTimeout(initHideDrawToolbar, 500);
 
+// ==== Compact Labels Mode (紧凑标签模式) ==== //
+let isCompactLabelsVisible = false;  // 紧凑标签模式默认关闭
+const COMPACT_LABELS_MAX_MARKERS = 50;  // 性能熔断阈值
+
+/**
+ * 生成紧凑标签的 HTML 内容
+ * @param {Object} props - 标记的 properties 对象
+ * @returns {string} HTML 字符串
+ */
+function generateCompactLabelContent(props) {
+    const name = props.name || props['名称'] || props.title || '未命名';
+    const type = props.type || props['类型'] || props.category || '';
+    const address = props.address || props['地址'] || props.location || '';
+
+    return `
+        <div class="label-content">
+            <div class="label-header">
+                <span class="label-name">${name}</span>
+                ${type ? `<span class="label-type">${type}</span>` : ''}
+            </div>
+            ${address ? `<div class="label-address" title="${address}">${address}</div>` : ''}
+        </div>
+    `;
+}
+
+/**
+ * 获取当前视野内的所有可见标记
+ * @returns {L.Marker[]} 标记数组
+ */
+function getVisibleMarkersInBounds() {
+    const bounds = map.getBounds();
+    const markers = [];
+
+    // 遍历 drawnItems
+    if (drawnItems) {
+        drawnItems.eachLayer(layer => {
+            if (layer instanceof L.Marker && bounds.contains(layer.getLatLng())) {
+                // 检查是否可见（非隐藏）
+                if (!hiddenLayers.has(layer._leaflet_id)) {
+                    markers.push(layer);
+                }
+            }
+        });
+    }
+
+    // 遍历 markerClusterGroup（如果聚合模式开启）
+    if (clusterEnabled && markerClusterGroup) {
+        markerClusterGroup.eachLayer(layer => {
+            if (layer instanceof L.Marker && bounds.contains(layer.getLatLng())) {
+                if (!hiddenLayers.has(layer._leaflet_id)) {
+                    markers.push(layer);
+                }
+            }
+        });
+    }
+
+    // 遍历 markerGroupManager（如果存在）
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager && markerGroupManager.getAllMarkers) {
+        try {
+            const groupMarkers = markerGroupManager.getAllMarkers();
+            groupMarkers.forEach(marker => {
+                if (bounds.contains(marker.getLatLng()) && !hiddenLayers.has(marker._leaflet_id)) {
+                    // 避免重复添加
+                    if (!markers.includes(marker)) {
+                        markers.push(marker);
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn('[CompactLabels] markerGroupManager 遍历失败:', e);
+        }
+    }
+
+    return markers;
+}
+
+/**
+ * 显示紧凑标签
+ */
+function showCompactLabels() {
+    const markers = getVisibleMarkersInBounds();
+
+    // 性能熔断检查
+    if (markers.length > COMPACT_LABELS_MAX_MARKERS) {
+        showBriefMessage(`⚠️ 视野内标记过多 (${markers.length})，仅显示前 ${COMPACT_LABELS_MAX_MARKERS} 个标签`);
+    }
+
+    // 只处理前 N 个标记
+    const markersToShow = markers.slice(0, COMPACT_LABELS_MAX_MARKERS);
+
+    markersToShow.forEach(marker => {
+        const props = marker.feature?.properties || {};
+        const tooltipContent = generateCompactLabelContent(props);
+
+        // 如果已有 tooltip，先解绑
+        if (marker.getTooltip()) {
+            marker.unbindTooltip();
+        }
+
+        // 绑定新的紧凑 tooltip
+        marker.bindTooltip(tooltipContent, {
+            permanent: true,
+            direction: 'top',
+            className: 'compact-map-label',
+            offset: [0, -10],
+            interactive: false
+        }).openTooltip();
+
+        // 标记已添加紧凑标签
+        marker._hasCompactLabel = true;
+    });
+
+    console.log(`[CompactLabels] 已显示 ${markersToShow.length} 个标签`);
+}
+
+/**
+ * 隐藏所有紧凑标签
+ */
+function hideCompactLabels() {
+    let count = 0;
+
+    // 遍历所有可能的标记来源
+    const sources = [drawnItems];
+    if (clusterEnabled && markerClusterGroup) sources.push(markerClusterGroup);
+
+    sources.forEach(source => {
+        if (source) {
+            source.eachLayer(layer => {
+                if (layer instanceof L.Marker && layer._hasCompactLabel) {
+                    layer.closeTooltip();
+                    layer.unbindTooltip();
+                    layer._hasCompactLabel = false;
+                    count++;
+                }
+            });
+        }
+    });
+
+    // 处理 markerGroupManager
+    if (typeof markerGroupManager !== 'undefined' && markerGroupManager && markerGroupManager.getAllMarkers) {
+        try {
+            markerGroupManager.getAllMarkers().forEach(marker => {
+                if (marker._hasCompactLabel) {
+                    marker.closeTooltip();
+                    marker.unbindTooltip();
+                    marker._hasCompactLabel = false;
+                    count++;
+                }
+            });
+        } catch (e) {
+            console.warn('[CompactLabels] markerGroupManager 清理失败:', e);
+        }
+    }
+
+    console.log(`[CompactLabels] 已隐藏 ${count} 个标签`);
+}
+
+/**
+ * 切换紧凑标签模式
+ */
+function toggleCompactLabels() {
+    isCompactLabelsVisible = !isCompactLabelsVisible;
+
+    const btn = document.getElementById('toggleCompactLabelsBtn');
+    const statusText = document.getElementById('compactLabelsStatusText');
+
+    if (isCompactLabelsVisible) {
+        showCompactLabels();
+        if (btn) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+        }
+        if (statusText) statusText.textContent = '已开启';
+        showBriefMessage('🏷️ 紧凑标签模式已开启');
+    } else {
+        hideCompactLabels();
+        if (btn) {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        }
+        if (statusText) statusText.textContent = '关闭';
+        showBriefMessage('ℹ️ 紧凑标签模式已关闭');
+    }
+}
+window.toggleCompactLabels = toggleCompactLabels;
+
+// 地图视野变化时自动刷新标签（如果模式开启）
+map.on('moveend zoomend', function () {
+    if (isCompactLabelsVisible) {
+        hideCompactLabels();
+        showCompactLabels();
+    }
+});
+
 
 // ==== Marker Clustering Setup ==== //
 // 使用 Leaflet.markercluster 实现标记聚合
