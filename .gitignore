@@ -38,3 +38,8 @@ npm-debug.log*
 # 打包产物
 /dist/
 /build/
+
+# 单网页构建产物（由 build-single.py 生成，不纳入版本控制）
+地图编辑器-*.html
+index-single.html
+.temp_combined.css

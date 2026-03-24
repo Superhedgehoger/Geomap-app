@@ -5515,3 +5515,170 @@ async function shareMap() {
 }
 window.shareMap = shareMap;
 
+
+// ============================================================
+// == 导出为单网页版 (Export as Self-Contained Single HTML) ==
+// ============================================================
+
+/**
+ * 将当前地图所有标记数据序列化为 GeoJSON，然后：
+ * 1. 通过 fetch 获取空白模板 `地图编辑器-空白版.html`
+ * 2. 将数据注入为 window.__PRELOADED_DATA__ 脚本块
+ * 3. 下载生成的 HTML 文件
+ *
+ * NOTE: 此功能依赖本地 HTTP 服务器提供模板文件。
+ *       若服务器未运行，请先执行 `python build-single.py` 生成空白版模板，
+ *       然后通过 `python server.py` 启动服务器后使用此功能。
+ */
+async function exportAsSinglePage() {
+    const btn = document.getElementById('exportSinglePageBtn');
+
+    // 收集当前所有标记
+    const markers = typeof getAllMarkers === 'function' ? getAllMarkers() : [];
+    if (markers.length === 0) {
+        const proceed = confirm('当前地图没有任何标记数据。\n是否仍然导出空白单网页版？');
+        if (!proceed) return;
+    }
+
+    // 构建 GeoJSON
+    const features = markers.map(marker => {
+        const ll = marker.getLatLng();
+        const props = marker.feature?.properties || {};
+        return {
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [ll.lng, ll.lat]
+            },
+            properties: { ...props }
+        };
+    });
+    const geojson = { type: 'FeatureCollection', features };
+
+    // UI 状态：按钮 loading
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 生成中...';
+    }
+
+    try {
+        // 尝试获取空白模板
+        const templateUrl = '地图编辑器-空白版.html';
+        let templateHtml;
+
+        try {
+            const resp = await fetch(templateUrl, { cache: 'no-cache' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            templateHtml = await resp.text();
+        } catch (fetchErr) {
+            // 模板不存在，提示用户先生成
+            alert(
+                '❌ 找不到空白模板文件。\n\n' +
+                '请先在项目目录运行：\n' +
+                '  python build-single.py\n\n' +
+                '生成 "地图编辑器-空白版.html" 后再使用此功能。'
+            );
+            return;
+        }
+
+        // 构造数据注入脚本块（插在 <body> 之后，所有 JS 执行之前）
+        const now = new Date().toLocaleString('zh-CN');
+        const dataScript = [
+            '<script>',
+            '// ── 预载地图数据（由应用内"导出为单网页版"生成）────────────',
+            `window.__PRELOADED_DATA__ = ${JSON.stringify(geojson)};`,
+            `window.__PRELOADED_META__ = ${JSON.stringify({
+                exportedAt: now,
+                featureCount: features.length,
+                source: 'in-app-export'
+            })};`,
+            '// ─────────────────────────────────────────────────────────',
+            '<\/script>'
+        ].join('\n');
+
+        // 注入到 <body> 标签之后
+        let html = templateHtml.replace(/<body([^>]*)>/, (match) => match + '\n' + dataScript);
+
+        // 生成文件名（含时间戳）
+        const ts = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+        const filename = `地图数据-${ts}.html`;
+
+        // 下载
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (typeof showBriefMessage === 'function') {
+            showBriefMessage(`✅ 已导出 ${features.length} 个标记 → ${filename}`);
+        }
+        console.log(`[SinglePage] 已导出: ${filename}，标记数: ${features.length}`);
+
+    } catch (err) {
+        console.error('[SinglePage] 导出失败:', err);
+        alert('导出失败: ' + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+
+// 绑定按钮事件
+const exportSinglePageBtn = document.getElementById('exportSinglePageBtn');
+if (exportSinglePageBtn) {
+    exportSinglePageBtn.addEventListener('click', exportAsSinglePage);
+}
+window.exportAsSinglePage = exportAsSinglePage;
+
+// ============================================================
+// == 启动时检测预载数据（支持 build-single.py --with-data）==
+// ============================================================
+
+/**
+ * 若当前页面由 build-single.py --with-data 或应用内导出生成，
+ * 则 window.__PRELOADED_DATA__ 中存有 GeoJSON 数据，自动导入到地图。
+ */
+(function autoLoadPreloadedData() {
+    if (!window.__PRELOADED_DATA__) return;
+
+    const data = window.__PRELOADED_DATA__;
+    const meta = window.__PRELOADED_META__ || {};
+
+    // 等 DOM 和地图初始化完成后再导入（最多等 3 秒）
+    let attempts = 0;
+    const tryImport = () => {
+        attempts++;
+        // 判断地图和 drawnItems 是否就绪
+        if (typeof importGeoJSON === 'function' && typeof drawnItems !== 'undefined') {
+            try {
+                importGeoJSON(JSON.stringify(data));
+                const count = data.features ? data.features.length : 0;
+                console.log(
+                    `[PreloadedData] 自动导入 ${count} 个标记`,
+                    meta.exportedAt ? `(导出于 ${meta.exportedAt})` : ''
+                );
+                if (typeof showBriefMessage === 'function') {
+                    showBriefMessage(`📍 已加载 ${count} 个预载标记`);
+                }
+            } catch (e) {
+                console.error('[PreloadedData] 导入失败:', e);
+            }
+        } else if (attempts < 30) {
+            // 每 100ms 重试，最多 3 秒
+            setTimeout(tryImport, 100);
+        } else {
+            console.warn('[PreloadedData] 超时：地图未就绪，跳过预载数据');
+        }
+    };
+
+    // 延迟 200ms 开始尝试（等待 DOM 完成）
+    setTimeout(tryImport, 200);
+})();
