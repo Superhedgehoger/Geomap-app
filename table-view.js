@@ -162,7 +162,7 @@ function getTableColumns() {
                     const props = layer.feature?.properties || {};
                     const name = props.名称 || props.name || '此标记';
 
-                    if (confirm(`确定要删除 "${name}" 吗？`)) {
+                    if (await showConfirm(`确定要删除 "${name}" 吗？`)) {
                         // 调用统一删除接口 (script.js 中已定义)
                         if (typeof deleteLayer === 'function') {
                             deleteLayer(L.stamp(layer));

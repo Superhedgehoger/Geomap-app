@@ -45,6 +45,7 @@ JS_FILES = [
     'custom-group-manager.js',
     'timeline-manager.js',
     'dashboard-panel.js',
+    'ui-dialogs.js',
     'script.js',
     'property-editor.js',
     'table-view.js',

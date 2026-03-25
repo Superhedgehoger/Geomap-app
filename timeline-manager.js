@@ -184,7 +184,7 @@ class TimelineManager {
     // === 快照操作 === //
     saveSnapshot(name) {
         if (this.isBrowseMode) {
-            alert('🚫 浏览模式下无法保存快照，请先退出或应用快照。');
+            showToast('🚫 浏览模式下无法保存快照，请先退出或应用快照。');
             return null;
         }
 
@@ -523,14 +523,13 @@ class TimelineManager {
         }
     }
 
-    // 快照点击处理
-    onSnapshotClick(snapshotId) {
+    async onSnapshotClick(snapshotId) {
         if (this.isBrowseMode) {
             // 浏览模式：直接加载
             this.loadSnapshot(snapshotId);
         } else {
             // 编辑模式：提示进入浏览模式
-            if (confirm('要加载此快照吗？\n\n• 点击「确定」进入浏览模式查看\n• 点击「取消」保持当前编辑')) {
+            if (await showConfirm('要加载此快照吗？\n\n• 点击「确定」进入浏览模式查看\n• 点击「取消」保持当前编辑', { danger: false, title: '加载快照', icon: '📸', confirmText: '进入浏览模式' })) {
                 this.enterBrowseMode();
                 this.loadSnapshot(snapshotId);
             }
@@ -689,8 +688,7 @@ class TimelineManager {
         }
     }
 
-    // 应用当前浏览的快照到编辑态
-    applyBrowsingSnapshot() {
+    async applyBrowsingSnapshot() {
         if (!this.isBrowseMode || !this.currentSnapshotId) {
             return;
         }
@@ -698,7 +696,7 @@ class TimelineManager {
         const snapshot = this.snapshots.get(this.currentSnapshotId);
         if (!snapshot) return;
 
-        if (confirm(`确定要将快照「${snapshot.name}」应用到当前编辑态吗？\n\n这将覆盖之前的编辑内容！`)) {
+        if (await showConfirm(`确定要将快照「${snapshot.name}」应用到当前编辑态吗？\n\n这将覆盖之前的编辑内容！`, { danger: true, title: '应用快照', confirmText: '确认应用' })) {
             console.log('Applying browsing snapshot to edit state...');
 
             // 清空保存的编辑态

@@ -49,7 +49,7 @@ function openPropertyDrawer(marker) {
     }
 
     if (!(marker instanceof L.Marker)) {
-        alert('属性编辑器仅支持标记');
+        showToast('属性编辑器仅支持标记');
         return;
     }
 
@@ -197,7 +197,7 @@ function addCustomProperty() {
 }
 
 function deleteCustomProperty(key) {
-    if (!confirm(`确定删除属性 "${key}"？`)) return;
+    if (!await showConfirm(`确定删除属性 "${key}"？`)) return;
 
     if (currentEditingMarker && currentEditingMarker.feature && currentEditingMarker.feature.properties) {
         delete currentEditingMarker.feature.properties[key];
@@ -300,7 +300,7 @@ function openEventTrackerFromDrawer() {
 
 function deleteMarkerFromDrawer() {
     if (!currentEditingMarker) return;
-    if (!confirm('确定删除此标记？')) return;
+    if (!await showConfirm('确定删除此标记？')) return;
 
     drawnItems.removeLayer(currentEditingMarker);
     updateLayerList();
