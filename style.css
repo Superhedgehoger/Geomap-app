@@ -6039,3 +6039,272 @@ body.screenshot-mode #map {
     /* 稍微放宽宽度，让换行更自然 */
     text-overflow: ellipsis;
 }
+
+
+/* ==== Marker Popup - 自定义字段布局 ==== */
+.marker-popup .popup-title {
+    margin: 0 0 10px 0;
+    color: #4a90e2;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.marker-popup .popup-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.marker-popup .popup-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.marker-popup .popup-field-label {
+    color: #aaa;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 40px;
+}
+
+.marker-popup .popup-field-label::after {
+    content: ':';
+}
+
+.marker-popup .popup-field-value {
+    color: #eee;
+    word-break: break-word;
+    text-align: right;
+}
+
+.marker-popup .popup-coords {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: monospace;
+    font-size: 0.82rem;
+}
+
+.marker-popup .btn-copy-coords {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.marker-popup .btn-copy-coords:hover { opacity: 1; }
+
+.marker-popup .popup-no-fields {
+    color: #666;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+
+/* ==== Popup Config Modal ==== */
+.popup-config-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-config-modal {
+    background: rgba(28, 28, 35, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    min-width: 400px;
+    max-width: 480px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0 0 20px 0;
+    color: #e0e0e0;
+}
+
+.popup-config-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    background: rgba(28, 28, 35, 0.98);
+    z-index: 1;
+}
+
+.popup-config-modal-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.popup-config-close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+.popup-config-close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.popup-config-desc {
+    margin: 12px 20px 4px;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* 字段列表 */
+.popup-field-list {
+    margin: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.popup-config-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+.popup-config-row:hover { background: rgba(255, 255, 255, 0.07); }
+
+/* Toggle switch */
+.popup-config-toggle {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.popup-config-toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #444;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.popup-config-toggle input:checked + .toggle-slider { background: #1677FF; }
+.popup-config-toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+.popup-config-label {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+}
+
+.popup-config-key {
+    font-size: 0.75rem;
+    color: #666;
+    font-family: monospace;
+    background: rgba(255,255,255,0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.popup-config-builtin {
+    font-size: 0.72rem;
+    color: #555;
+    background: rgba(255,255,255,0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.popup-config-del-btn {
+    background: none;
+    border: none;
+    color: #e24a4a;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+.popup-config-del-btn:hover { background: rgba(226, 74, 74, 0.15); }
+
+/* 添加字段区 */
+.popup-add-field {
+    margin: 16px 16px 0;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+
+.popup-add-field h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.85rem;
+    color: #aaa;
+    font-weight: normal;
+}
+
+.popup-add-field-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.popup-add-field-row input {
+    flex: 1;
+    min-width: 100px;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+}
+.popup-add-field-row input:focus {
+    outline: none;
+    border-color: #1677FF;
+    background: rgba(22, 119, 255, 0.08);
+}
+
+/* 操作按钮 */
+.popup-config-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 16px 20px 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+}

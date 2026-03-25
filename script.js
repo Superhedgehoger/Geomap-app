@@ -1813,14 +1813,23 @@ function updateLabels() {
 function bindMarkerPopup(layer) {
     if (!(layer instanceof L.Marker)) return;
 
+    // NOTE: 弹出内容由 popup-config.js 的 renderMarkerPopupHtml() 动态生成
+    // 用户可在"高级工具 -> 弹出信息配置"中自定义显示字段
+    const popupHtml = typeof renderMarkerPopupHtml === 'function'
+        ? renderMarkerPopupHtml(layer)
+        : _bindMarkerPopupFallback(layer);
+
+    layer.bindPopup(popupHtml, { maxWidth: 320 });
+}
+
+// 兜底：popup-config.js 未加载时的简单实现
+function _bindMarkerPopupFallback(layer) {
     const latlng = layer.getLatLng();
     const props = layer.feature?.properties || {};
-    const name = props.名称 || props.name || layer.options.name || '未命名标记';
-    const type = props.类型 || props.type || '';
-    const address = props.地址 || props.address || '';
+    const name = props['\u540d\u79f0'] || props.name || layer.options.name || '\u672a\u547d\u540d\u6807\u8bb0';
+    const type = props['\u7c7b\u578b'] || props.type || '';
+    const address = props['\u5730\u5740'] || props.address || '';
     const events = props.events || [];
-
-    // Build event list HTML (show up to 3 recent events)
     let eventListHtml = '';
     if (events.length > 0) {
         const recentEvents = events.slice(-3).reverse();
@@ -1835,19 +1844,16 @@ function bindMarkerPopup(layer) {
             ${events.length > 3 ? `<div class="popup-event-more">还有 ${events.length - 3} 个事件...</div>` : ''}
         </div>`;
     }
-
-    const popupHtml = `<div class="marker-popup">
-        <h3 style="margin: 0 0 8px 0; color: #4a90e2;">${name}</h3>
-        <div style="font-size: 0.9rem; line-height: 1.4; margin-bottom: 10px;">
+    return `<div class="marker-popup">
+        <h3 style="margin:0 0 8px 0;color:#4a90e2;">${name}</h3>
+        <div style="font-size:0.9rem;line-height:1.4;margin-bottom:10px;">
             ${type ? `<strong>类型:</strong> ${type}<br>` : ''}
             ${address ? `<strong>地址:</strong> ${address}<br>` : ''}
-            <strong>经纬度:</strong> ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)} 
-            <button onclick="navigator.clipboard.writeText('${latlng.lat},${latlng.lng}'); showBriefMessage('✅ 坐标已复制')" class="btn-copy" style="padding: 2px 6px; font-size: 0.8rem; margin-left: 5px; cursor: pointer;">复制</button>
+            <strong>经纬度:</strong> ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}
+            <button onclick="navigator.clipboard.writeText('${latlng.lat},${latlng.lng}');showBriefMessage('✅ 坐标已复制')" class="btn-copy" style="padding:2px 6px;font-size:0.8rem;margin-left:5px;cursor:pointer;">复制</button>
         </div>
         ${eventListHtml}
     </div>`;
-
-    layer.bindPopup(popupHtml, { maxWidth: 300 });
 }
 
 // ==== Context Menu Functions ==== //

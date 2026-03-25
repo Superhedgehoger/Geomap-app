@@ -241,7 +241,11 @@
                         </button>
                     </div>
                     <div class="control-group">
-
+                        <button class="btn-secondary" onclick="openPopupConfigModal()"
+                            style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fa-solid fa-sliders"></i> 弹出信息配置</span>
+                            <span style="font-size:0.8rem;opacity:0.7;">自定义显示字段</span>
+                        </button>
                     </div>
                     <div class="control-group">
                         <label for="markerIconSelect">标记图标样式</label>
@@ -836,10 +840,46 @@
     <script src="dashboard-panel.js"></script>
     <!-- UI Dialogs: unified Toast + Confirm system -->
     <script src="ui-dialogs.js"></script>
+    <!-- Popup Config Module - 弹出信息字段自定义 -->
+    <script src="popup-config.js"></script>
     <script src="script.js"></script>
     <script src="property-editor.js"></script>
     <script src="table-view.js"></script>
 
+    <!-- ==== Popup Config Modal ==== -->
+    <div id="popupConfigModal" class="popup-config-modal-overlay" style="display:none">
+        <div class="popup-config-modal">
+            <div class="popup-config-modal-header">
+                <h3><i class="fa-solid fa-sliders"></i> 弹出信息配置</h3>
+                <button class="popup-config-close-btn" onclick="closePopupConfigModal()">✕</button>
+            </div>
+            <p class="popup-config-desc">配置点击标记时弹出信息框中显示的字段。</p>
+
+            <!-- 字段列表 -->
+            <div id="popupFieldList" class="popup-field-list"></div>
+
+            <!-- 添加新字段 -->
+            <div class="popup-add-field">
+                <h4>添加自定义字段</h4>
+                <div class="popup-add-field-row">
+                    <input type="text" id="newPopupFieldKey" placeholder="字段键名（如：销售等级）" list="knownFieldKeys" />
+                    <datalist id="knownFieldKeys"></datalist>
+                    <input type="text" id="newPopupFieldLabel" placeholder="显示标签（可选）" />
+                    <button class="btn-primary" onclick="addPopupField()">
+                        <i class="fa-solid fa-plus"></i> 添加
+                    </button>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="popup-config-actions">
+                <button class="btn-secondary" onclick="closePopupConfigModal()">取消</button>
+                <button class="btn-primary" onclick="saveAndRefreshPopups()">
+                    <i class="fa-solid fa-check"></i> 保存并刷新
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
