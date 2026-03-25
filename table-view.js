@@ -144,7 +144,7 @@ function getTableColumns() {
                     </button>
                 `;
             },
-            cellClick: function (e, cell) {
+            cellClick: async function (e, cell) {
                 e.stopPropagation();  // 阻止冒泡到行点击
                 const rowData = cell.getRow().getData();
                 const target = e.target.closest('button');

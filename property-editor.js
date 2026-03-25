@@ -196,7 +196,7 @@ function addCustomProperty() {
     valueInput.value = '';
 }
 
-function deleteCustomProperty(key) {
+async function deleteCustomProperty(key) {
     if (!await showConfirm(`确定删除属性 "${key}"？`)) return;
 
     if (currentEditingMarker && currentEditingMarker.feature && currentEditingMarker.feature.properties) {
@@ -298,7 +298,7 @@ function openEventTrackerFromDrawer() {
     }, 350);
 }
 
-function deleteMarkerFromDrawer() {
+async function deleteMarkerFromDrawer() {
     if (!currentEditingMarker) return;
     if (!await showConfirm('确定删除此标记？')) return;
 
