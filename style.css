@@ -6067,7 +6067,7 @@ body.screenshot-mode #map {
 }
 
 .marker-popup .popup-field-label {
-    color: #aaa;
+    color: #555;
     white-space: nowrap;
     flex-shrink: 0;
     min-width: 40px;
@@ -6078,7 +6078,7 @@ body.screenshot-mode #map {
 }
 
 .marker-popup .popup-field-value {
-    color: #eee;
+    color: #222;
     word-break: break-word;
     text-align: right;
 }
@@ -6103,7 +6103,7 @@ body.screenshot-mode #map {
 .marker-popup .btn-copy-coords:hover { opacity: 1; }
 
 .marker-popup .popup-no-fields {
-    color: #666;
+    color: #999;
     font-size: 0.85rem;
     font-style: italic;
 }
