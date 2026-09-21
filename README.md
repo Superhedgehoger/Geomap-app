@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v4.1.0--beta.3-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.1.0--beta.4-blue.svg)](CHANGELOG.md)
 [![CI](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
