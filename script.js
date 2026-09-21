@@ -15,6 +15,8 @@ const AMAP_MAP_KEY = '';
 const TENCENT_MAP_KEY = '';
 // 天地图 Token（需在 https://console.tianditu.gov.cn/ 注册）
 const TIANDITU_TOKEN = '';
+const DEFAULT_BASE_LAYER_KEY = 'amap';
+const OSM_FALLBACK_LAYER_KEY = 'amap';
 
 function isEventTrackerEnabled() {
     return !window.GEOMAP_FEATURES || window.GEOMAP_FEATURES.eventTracker !== false;
@@ -32,9 +34,11 @@ const map = L.map('map', {
 // 注意：高德/腾讯使用 GCJ-02 坐标系，与 WGS-84 有偏移
 const baseLayers = {
     // === 国际通用底图 === //
-    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+    osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
+        crossOrigin: true,
+        referrerPolicy: 'strict-origin-when-cross-origin'
     }),
     satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '&copy; Esri',
@@ -86,9 +90,19 @@ const baseLayers = {
     })
 };
 
-// 当前底图（默认 OSM）
-let currentBaseLayer = baseLayers.osm;
+// 当前底图（中国业务场景默认使用高德地图）
+let currentBaseLayerKey = DEFAULT_BASE_LAYER_KEY;
+let currentBaseLayer = baseLayers[currentBaseLayerKey];
 currentBaseLayer.addTo(map);
+
+function syncBaseLayerControls(layerKey) {
+    ['baseMapSelect', 'basemapSelect'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select && select.querySelector(`option[value="${layerKey}"]`)) {
+            select.value = layerKey;
+        }
+    });
+}
 
 // 底图切换函数
 function switchBaseLayer(layerKey) {
@@ -101,13 +115,32 @@ function switchBaseLayer(layerKey) {
         map.removeLayer(currentBaseLayer);
     }
     // 添加新底图
+    currentBaseLayerKey = layerKey;
     currentBaseLayer = baseLayers[layerKey];
     currentBaseLayer.addTo(map);
     // 确保底图在最底层
     currentBaseLayer.bringToBack();
+    syncBaseLayerControls(layerKey);
     console.log('已切换底图:', layerKey);
 }
 window.switchBaseLayer = switchBaseLayer;
+
+// OSM 是社区资助的最佳努力服务。连续失败时回退到高德，避免用户看到空白地图。
+let osmConsecutiveTileErrors = 0;
+baseLayers.osm.on('tileload', () => {
+    osmConsecutiveTileErrors = 0;
+});
+baseLayers.osm.on('tileerror', event => {
+    if (currentBaseLayerKey !== 'osm' || navigator.onLine === false) return;
+    osmConsecutiveTileErrors += 1;
+    if (osmConsecutiveTileErrors < 3) return;
+
+    const failedUrl = event?.tile?.currentSrc || event?.tile?.src || '';
+    console.warn('[BaseMap] OpenStreetMap 瓦片连续加载失败，已回退高德地图。', failedUrl);
+    osmConsecutiveTileErrors = 0;
+    switchBaseLayer(OSM_FALLBACK_LAYER_KEY);
+    showBriefMessage('⚠️ OpenStreetMap 暂时不可用，已自动切换到高德地图');
+});
 
 
 // ==== Critical UI Functions (Defined early to prevent runtime errors) ==== //
@@ -369,9 +402,9 @@ const COMPACT_LABELS_MAX_MARKERS = 50;  // 性能熔断阈值
  * @returns {string} HTML 字符串
  */
 function generateCompactLabelContent(props) {
-    const name = props.name || props['名称'] || props.title || '未命名';
-    const type = props.type || props['类型'] || props.category || '';
-    const address = props.address || props['地址'] || props.location || '';
+    const name = escapeHtml(String(props.name || props['名称'] || props.title || '未命名'));
+    const type = escapeHtml(String(props.type || props['类型'] || props.category || ''));
+    const address = escapeHtml(String(props.address || props['地址'] || props.location || ''));
 
     return `
         <div class="label-content">
@@ -382,6 +415,106 @@ function generateCompactLabelContent(props) {
             ${address ? `<div class="label-address" title="${address}">${address}</div>` : ''}
         </div>
     `;
+}
+
+/**
+ * 根据图标尺寸和屏幕位置把标签放到图标外侧，避免遮挡图标。
+ * 地图边缘的标记使用左/右侧，其余默认放在上方。
+ */
+function getMarkerLabelPlacements(marker) {
+    const iconOptions = marker?.options?.icon?.options || {};
+    const size = L.point(iconOptions.iconSize || [30, 42]);
+    const anchor = L.point(iconOptions.iconAnchor || [size.x / 2, size.y]);
+    const point = map.latLngToContainerPoint(marker.getLatLng());
+    const mapSize = map.getSize();
+    const horizontalEdge = Math.min(220, mapSize.x * 0.22);
+    const verticalCenterOffset = -(anchor.y - size.y / 2);
+    const placement = (direction, gap) => {
+        if (direction === 'top') return { direction, offset: [0, -(anchor.y + gap)] };
+        if (direction === 'bottom') {
+            return { direction, offset: [0, size.y - anchor.y + gap] };
+        }
+        if (direction === 'right') {
+            return { direction, offset: [size.x - anchor.x + gap, verticalCenterOffset] };
+        }
+        return { direction, offset: [-(anchor.x + gap), verticalCenterOffset] };
+    };
+
+    let directionOrder;
+
+    if (point.x < horizontalEdge) {
+        directionOrder = ['right', 'top', 'bottom', 'left'];
+    } else if (point.x > mapSize.x - horizontalEdge) {
+        directionOrder = ['left', 'top', 'bottom', 'right'];
+    } else if (point.y - anchor.y < 100) {
+        directionOrder = ['bottom', 'right', 'left', 'top'];
+    } else {
+        directionOrder = ['top', 'right', 'left', 'bottom'];
+    }
+
+    // 密集门店中逐步扩大标签与目标点的间距，直到避开其他图标。
+    return [8, 32, 56, 80, 104].flatMap(gap =>
+        directionOrder.map(direction => placement(direction, gap))
+    );
+}
+
+function getMarkerLabelPlacement(marker) {
+    return getMarkerLabelPlacements(marker)[0];
+}
+
+function rectangleOverlapArea(first, second) {
+    const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+    const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+    return width * height;
+}
+
+/**
+ * 实际测量屏幕上的标签和所有图标，从四个方向中选择无遮挡且不超出地图的位置。
+ */
+function avoidMarkerIconOverlap(marker) {
+    const tooltip = marker.getTooltip();
+    const tooltipElement = tooltip?.getElement();
+    const markerElement = marker.getElement();
+    const mapElement = map.getContainer();
+    if (!tooltip || !tooltipElement || !mapElement) return;
+
+    const sourceMarkerId = String(L.stamp(marker));
+    tooltipElement.dataset.sourceMarkerId = sourceMarkerId;
+    if (markerElement) markerElement.dataset.labelSourceId = sourceMarkerId;
+
+    const mapBox = mapElement.getBoundingClientRect();
+    const iconBoxes = [...mapElement.querySelectorAll('.leaflet-marker-icon')]
+        .filter(icon => icon.getClientRects().length > 0)
+        .map(icon => icon.getBoundingClientRect());
+    const candidates = getMarkerLabelPlacements(marker);
+    let bestCandidate = candidates[0];
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    candidates.forEach(candidate => {
+        tooltip.options.direction = candidate.direction;
+        tooltip.options.offset = L.point(candidate.offset);
+        tooltip.update();
+
+        const labelBox = tooltipElement.getBoundingClientRect();
+        const outsideWidth = Math.max(0, mapBox.left + 4 - labelBox.left)
+            + Math.max(0, labelBox.right - mapBox.right + 4);
+        const outsideHeight = Math.max(0, mapBox.top + 4 - labelBox.top)
+            + Math.max(0, labelBox.bottom - mapBox.bottom + 4);
+        const iconOverlap = iconBoxes.reduce(
+            (total, iconBox) => total + rectangleOverlapArea(labelBox, iconBox),
+            0
+        );
+        const score = iconOverlap + (outsideWidth + outsideHeight) * 1000;
+
+        if (score < bestScore) {
+            bestScore = score;
+            bestCandidate = candidate;
+        }
+    });
+
+    tooltip.options.direction = bestCandidate.direction;
+    tooltip.options.offset = L.point(bestCandidate.offset);
+    tooltip.update();
 }
 
 /**
@@ -440,6 +573,7 @@ function getVisibleMarkersInBounds() {
  */
 function showCompactLabels() {
     const markers = getVisibleMarkersInBounds();
+    map.getContainer().dataset.compactLabelsLayout = 'pending';
 
     // 性能熔断检查
     if (markers.length > COMPACT_LABELS_MAX_MARKERS) {
@@ -452,6 +586,7 @@ function showCompactLabels() {
     markersToShow.forEach(marker => {
         const props = marker.feature?.properties || {};
         const tooltipContent = generateCompactLabelContent(props);
+        const placement = getMarkerLabelPlacement(marker);
 
         // 如果已有 tooltip，先解绑
         if (marker.getTooltip()) {
@@ -461,14 +596,23 @@ function showCompactLabels() {
         // 绑定新的紧凑 tooltip
         marker.bindTooltip(tooltipContent, {
             permanent: true,
-            direction: 'top',
+            direction: placement.direction,
             className: 'compact-map-label',
-            offset: [0, -10],
+            offset: placement.offset,
             interactive: false
         }).openTooltip();
+        avoidMarkerIconOverlap(marker);
 
         // 标记已添加紧凑标签
         marker._hasCompactLabel = true;
+    });
+
+    // 等 Leaflet 完成所有图标的 transform 后再做一次全局避让，消除并行加载时序差。
+    requestAnimationFrame(() => {
+        markersToShow.forEach(marker => {
+            if (marker._hasCompactLabel) avoidMarkerIconOverlap(marker);
+        });
+        map.getContainer().dataset.compactLabelsLayout = 'ready';
     });
 
     console.log(`[CompactLabels] 已显示 ${markersToShow.length} 个标签`);
@@ -479,6 +623,7 @@ function showCompactLabels() {
  */
 function hideCompactLabels() {
     let count = 0;
+    delete map.getContainer().dataset.compactLabelsLayout;
 
     // 遍历所有可能的标记来源
     const sources = [drawnItems];
@@ -1814,7 +1959,16 @@ function updateLabels() {
     drawnItems.eachLayer(layer => {
         if (layer.getTooltip()) layer.unbindTooltip();
         if (showLabels && layer.options.name) {
-            layer.bindTooltip(layer.options.name, { permanent: true, direction: 'center', className: 'layer-label' });
+            const markerPlacement = layer instanceof L.Marker
+                ? getMarkerLabelPlacement(layer)
+                : { direction: 'center', offset: [0, 0] };
+            layer.bindTooltip(escapeHtml(String(layer.options.name)), {
+                permanent: true,
+                direction: markerPlacement.direction,
+                offset: markerPlacement.offset,
+                className: 'layer-label'
+            }).openTooltip();
+            if (layer instanceof L.Marker) avoidMarkerIconOverlap(layer);
         }
     });
 }
@@ -2112,9 +2266,7 @@ map.on('click', () => hideContextMenu());
 
 // ==== Event Listeners ==== //
 baseMapSelect.addEventListener('change', () => {
-    const sel = baseMapSelect.value;
-    Object.values(baseLayers).forEach(l => map.removeLayer(l));
-    baseLayers[sel].addTo(map);
+    switchBaseLayer(baseMapSelect.value);
 });
 
 map.on(L.Draw.Event.CREATED, e => {

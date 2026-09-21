@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v4.1.0--beta.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.1.0--beta.3-blue.svg)](CHANGELOG.md)
 [![CI](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -24,7 +24,7 @@ Decision-oriented store-network workspace with private browser storage, map edit
 | ---------- | ----------------------------------------------------------- |
 | 决策总览   | 门店总数、在营/筹备/闭店状态、区域覆盖、搜索和联动筛选      |
 | 查看/编辑  | 管理层默认安全查看；显式进入编辑后使用完整地图维护能力      |
-| 地图编辑   | 标记、折线、多边形、矩形、圆形和样式编辑                    |
+| 地图编辑   | 高德默认底图、完整避让标签、点线面和样式编辑                |
 | 数据管理   | GeoJSON、Excel、CSV 导入导出，地图/图层/表格四向联动        |
 | 组织与回溯 | 自定义分组、点聚合、历史快照和 schema v2 经营时空数据底座   |
 | 经营时间   | 时间回放、五类记录、批量指标、A/B 差异、专题线和复盘视图    |

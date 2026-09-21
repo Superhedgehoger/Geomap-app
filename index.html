@@ -127,12 +127,13 @@
                     <div class="control-group">
                         <label for="baseMapSelect">底图切换</label>
                         <select id="baseMapSelect">
+                            <option value="amap" selected>高德地图</option>
+                            <option value="amapSatellite">高德卫星</option>
                             <option value="osm">OpenStreetMap 标准</option>
                             <option value="satellite">卫星影像</option>
                             <option value="dark">暗色主题</option>
                             <option value="light">浅色主题</option>
                             <option value="terrain">地形图</option>
-                            <option value="carto">CartoDB 简约</option>
                         </select>
                     </div>
                 </div>
@@ -262,14 +263,14 @@
                         <label for="basemapSelect">底图选择</label>
                         <select id="basemapSelect" onchange="switchBaseLayer(this.value)">
                             <optgroup label="国际通用">
-                                <option value="osm" selected>OpenStreetMap</option>
+                                <option value="osm">OpenStreetMap</option>
                                 <option value="satellite">卫星影像 (Esri)</option>
                                 <option value="dark">暗色主题 (CartoDB)</option>
                                 <option value="light">亮色主题 (CartoDB)</option>
                                 <option value="terrain">地形图 (OpenTopo)</option>
                             </optgroup>
                             <optgroup label="中国底图">
-                                <option value="amap">高德地图</option>
+                                <option value="amap" selected>高德地图</option>
                                 <option value="amapSatellite">高德卫星</option>
                             </optgroup>
                         </select>
