@@ -1,8 +1,28 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 
 const example = JSON.parse(await readFile(resolve('examples/decision-demo.geojson'), 'utf8'));
+const transparentTile = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL4WQAAAABJRU5ErkJggg==',
+  'base64'
+);
+
+async function fulfillMapTile(route: Route) {
+  await route.fulfill({
+    status: 200,
+    contentType: 'image/png',
+    headers: { 'access-control-allow-origin': '*' },
+    body: transparentTile
+  });
+}
+
+function isOnlineMapTile(url: string) {
+  return (
+    url.includes('tile.openstreetmap.org') ||
+    (/\.is\.autonavi\.com\/appmaptile/.test(url) && url.startsWith('https://'))
+  );
+}
 
 async function collectPageErrors(page: Page): Promise<string[]> {
   const errors: string[] = [];
@@ -48,6 +68,96 @@ test('Full opens in decision view and keeps legacy editing available', async ({ 
   await expect(page.locator('#decisionShell')).toBeVisible();
   await expect(page.locator('#controls')).toBeHidden();
   expect(errors).toEqual([]);
+});
+
+test('Amap is the default and OSM uses its supported host with automatic fallback', async ({
+  page
+}) => {
+  const osmRequests: string[] = [];
+  await page.route(/https:\/\/webrd0[1-4]\.is\.autonavi\.com\/appmaptile.*/, fulfillMapTile);
+  await page.route('https://tile.openstreetmap.org/**', async (route) => {
+    osmRequests.push(route.request().url());
+    await route.abort('failed');
+  });
+  page.on('request', (request) => {
+    if (/https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(request.url())) {
+      osmRequests.push(request.url());
+    }
+  });
+
+  await page.goto('/');
+  await expect(page.locator('#baseMapSelect')).toHaveValue('amap');
+  await expect(page.locator('#basemapSelect')).toHaveValue('amap');
+  await page.locator('#decisionModeBtn').click();
+  await page.locator('#baseMapSelect').selectOption('osm');
+
+  await expect(page.locator('#basemapSelect')).toHaveValue('amap');
+  await expect(page.locator('#baseMapSelect')).toHaveValue('amap');
+  await expect(page.locator('#_briefMsg')).toContainText('OpenStreetMap 暂时不可用');
+  expect(osmRequests.length).toBeGreaterThanOrEqual(3);
+  expect(osmRequests.every((url) => new URL(url).hostname === 'tile.openstreetmap.org')).toBe(true);
+});
+
+test('long marker labels wrap fully outside marker icons', async ({ page }) => {
+  const data = structuredClone(example);
+  const longName = '非常长的青岛区域旗舰门店名称用于验证标签完整显示不被截断';
+  data.features[0].properties.name = longName;
+  data.features[0].properties.address =
+    '青岛市示例区很长的演示地址一二三四五六七八九十号附近商业中心';
+  await page.route(/https:\/\/webrd0[1-4]\.is\.autonavi\.com\/appmaptile.*/, fulfillMapTile);
+  await page.addInitScript((preloaded) => {
+    window.__PRELOADED_DATA__ = preloaded;
+  }, data);
+
+  await page.goto('/');
+  await page.locator('#decisionModeBtn').click();
+  await page.locator('#toggleCompactLabelsBtn').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-compact-labels-layout', 'ready');
+
+  const label = page.locator('.compact-map-label').filter({ hasText: longName }).first();
+  await expect(label).toBeVisible();
+  await expect(label.locator('.label-name')).toHaveText(longName);
+  const result = await label.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const name = element.querySelector('.label-name');
+    const address = element.querySelector('.label-address');
+    const sourceMarkerId = element.getAttribute('data-source-marker-id');
+    const sourceMarker = document.querySelector(
+      `.custom-marker-icon[data-label-source-id="${sourceMarkerId}"]`
+    );
+    const markerBox = sourceMarker?.getBoundingClientRect();
+    const overlapsSource = markerBox
+      ? !(
+          box.right <= markerBox.left ||
+          box.left >= markerBox.right ||
+          box.bottom <= markerBox.top ||
+          box.top >= markerBox.bottom
+        )
+      : true;
+    const markerPane = document.querySelector('.leaflet-marker-pane');
+    const tooltipPane = document.querySelector('.leaflet-tooltip-pane');
+    const isClipped = (node: Element | null) =>
+      node instanceof HTMLElement &&
+      (node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1);
+    return {
+      overlapsSource,
+      markersAboveLabels:
+        markerPane !== null &&
+        tooltipPane !== null &&
+        Number(getComputedStyle(markerPane).zIndex) > Number(getComputedStyle(tooltipPane).zIndex),
+      nameClipped: isClipped(name),
+      addressClipped: isClipped(address),
+      textOverflow: name ? getComputedStyle(name).textOverflow : ''
+    };
+  });
+
+  expect(result).toEqual({
+    overlapsSource: false,
+    markersAboveLabels: true,
+    nameClipped: false,
+    addressClipped: false,
+    textOverflow: 'clip'
+  });
 });
 
 test('management filters and store-network navigation update the current view', async ({
@@ -421,7 +531,7 @@ test('standalone build stays usable offline without external application assets'
   const externalAssets: string[] = [];
   await page.route('**/*', async (route) => {
     const url = route.request().url();
-    if (url.startsWith('file:') || url.includes('tile.openstreetmap.org')) await route.continue();
+    if (url.startsWith('file:') || isOnlineMapTile(url)) await route.continue();
     else {
       externalAssets.push(url);
       await route.abort();
@@ -438,5 +548,5 @@ test('standalone build stays usable offline without external application assets'
   await page.goto(`file://${resolve('release/geomap-lite.html')}`);
   await expect(page.locator('#map')).toBeVisible();
   expect(await page.evaluate(() => window.GeomapCore.config.variant)).toBe('lite');
-  expect(externalAssets.filter((url) => !url.includes('tile.openstreetmap.org'))).toEqual([]);
+  expect(externalAssets.filter((url) => !isOnlineMapTile(url))).toEqual([]);
 });

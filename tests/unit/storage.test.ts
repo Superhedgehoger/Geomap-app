@@ -19,6 +19,11 @@ function memoryStorage(seed: Record<string, string> = {}): StorageLike {
 }
 
 describe('workspace migration', () => {
+  it('uses Amap for a new workspace without overriding migrated choices', () => {
+    const state = loadWorkspace(memoryStorage());
+    expect(state.view.baseLayer).toBe('amap');
+  });
+
   it('imports legacy values without deleting them', () => {
     const storage = memoryStorage({ geomap_custom_groups: '[{"id":"g"}]' });
     const state = loadWorkspace(storage);

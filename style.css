@@ -923,6 +923,10 @@ hr.divider {
     padding: 4px 8px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
     font-family: 'Segoe UI', sans-serif !important;
+    max-width: min(320px, calc(100vw - 32px)) !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .layer-label::before {
@@ -1118,6 +1122,10 @@ hr.divider {
     padding: 4px 8px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
     font-family: 'Segoe UI', sans-serif !important;
+    max-width: min(320px, calc(100vw - 32px)) !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .layer-label::before {
@@ -5946,6 +5954,15 @@ body.screenshot-mode #map {
 }
 
 /* ==== Compact Map Labels (紧凑标签模式) ==== */
+/* 标签可以绕过密集点，但任何图标都必须保持在标签之上可见。 */
+#map .leaflet-tooltip-pane {
+    z-index: 650;
+}
+
+#map .leaflet-marker-pane {
+    z-index: 660;
+}
+
 /* 覆盖 Leaflet 默认 tooltip 样式 */
 .leaflet-tooltip.compact-map-label {
     /* 深色半透明背景 + 背景模糊 */
@@ -5969,6 +5986,10 @@ body.screenshot-mode #map {
 
     /* 禁用默认箭头 */
     white-space: normal !important;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 32px)) !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* 移除 Leaflet tooltip 的箭头 */
@@ -5989,17 +6010,19 @@ body.screenshot-mode #map {
     align-items: center;
     gap: 6px;
     margin-bottom: 2px;
+    flex-wrap: wrap;
 }
 
-/* 名称：粗体、不换行 */
+/* 名称：完整展示，超长文本自动换行 */
 .compact-map-label .label-name {
     font-weight: bold;
     font-size: 12px;
-    white-space: nowrap;
+    white-space: normal;
     color: #fff;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 100%;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* 类型：小胶囊样式 */
@@ -6014,7 +6037,7 @@ body.screenshot-mode #map {
     flex-shrink: 0;
 }
 
-/* 地址：浅灰色、多行截断（最多3行） */
+/* 地址：浅灰色并完整换行展示 */
 .compact-map-label .label-address {
     /* 基础字体设置 */
     color: #ccc;
@@ -6023,21 +6046,12 @@ body.screenshot-mode #map {
     /* 增加行高提升可读性 */
     margin-top: 2px;
 
-    /* 核心：多行截断 (最多3行) */
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    /* 限制为 3 行 */
-    -webkit-box-orient: vertical;
-    /* 垂直排列 */
-    overflow: hidden;
-    /* 超出隐藏 */
-
-    /* 布局设置 */
+    display: block;
+    overflow: visible;
     white-space: normal;
-    /* 允许文本换行 */
-    max-width: 160px;
-    /* 稍微放宽宽度，让换行更自然 */
-    text-overflow: ellipsis;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 

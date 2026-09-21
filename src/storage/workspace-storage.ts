@@ -39,7 +39,7 @@ export function createEmptyWorkspace(now = new Date().toISOString()): WorkspaceS
   return {
     schemaVersion: 2,
     updatedAt: now,
-    view: { center: [36.0671, 120.3826], zoom: 12, baseLayer: 'osm' },
+    view: { center: [36.0671, 120.3826], zoom: 12, baseLayer: 'amap' },
     features: [],
     locations: [],
     areas: [],
