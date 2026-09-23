@@ -471,50 +471,114 @@ function rectangleOverlapArea(first, second) {
 /**
  * 实际测量屏幕上的标签和所有图标，从四个方向中选择无遮挡且不超出地图的位置。
  */
-function avoidMarkerIconOverlap(marker) {
-    const tooltip = marker.getTooltip();
-    const tooltipElement = tooltip?.getElement();
-    const markerElement = marker.getElement();
-    const mapElement = map.getContainer();
-    if (!tooltip || !tooltipElement || !mapElement) return;
+let compactLabelFrame = 0;
+let compactLabelMapMoving = false;
+let compactLabelLines = null;
+const compactLabelMarkers = new Set();
 
-    const sourceMarkerId = String(L.stamp(marker));
-    tooltipElement.dataset.sourceMarkerId = sourceMarkerId;
-    if (markerElement) markerElement.dataset.labelSourceId = sourceMarkerId;
-
-    const mapBox = mapElement.getBoundingClientRect();
-    const iconBoxes = [...mapElement.querySelectorAll('.leaflet-marker-icon')]
-        .filter(icon => icon.getClientRects().length > 0)
-        .map(icon => icon.getBoundingClientRect());
-    const candidates = getMarkerLabelPlacements(marker);
-    let bestCandidate = candidates[0];
-    let bestScore = Number.POSITIVE_INFINITY;
-
-    candidates.forEach(candidate => {
-        tooltip.options.direction = candidate.direction;
-        tooltip.options.offset = L.point(candidate.offset);
-        tooltip.update();
-
-        const labelBox = tooltipElement.getBoundingClientRect();
-        const outsideWidth = Math.max(0, mapBox.left + 4 - labelBox.left)
-            + Math.max(0, labelBox.right - mapBox.right + 4);
-        const outsideHeight = Math.max(0, mapBox.top + 4 - labelBox.top)
-            + Math.max(0, labelBox.bottom - mapBox.bottom + 4);
-        const iconOverlap = iconBoxes.reduce(
-            (total, iconBox) => total + rectangleOverlapArea(labelBox, iconBox),
-            0
-        );
-        const score = iconOverlap + (outsideWidth + outsideHeight) * 1000;
-
-        if (score < bestScore) {
-            bestScore = score;
-            bestCandidate = candidate;
-        }
+function layoutCompactLabels(markers) {
+    const container = map.getContainer();
+    const bounds = container.getBoundingClientRect();
+    const viewport = map.getSize();
+    const toLocal = rect => ({
+        left: rect.left - bounds.left, top: rect.top - bounds.top,
+        right: rect.right - bounds.left, bottom: rect.bottom - bounds.top
     });
+    // Read every rectangle before performing any writes.
+    const icons = [...container.querySelectorAll('.leaflet-marker-icon')]
+        .map(element => toLocal(element.getBoundingClientRect()));
+    const panels = [...document.querySelectorAll('#controls, #layerPanel, #decisionInsights, #decisionShell')]
+        .filter(element => getComputedStyle(element).visibility !== 'hidden' && element.getClientRects().length)
+        .map(element => toLocal(element.getBoundingClientRect()));
+    const entries = markers.map(marker => {
+        const tooltip = marker.getTooltip();
+        const element = tooltip?.getElement();
+        const icon = marker.getElement();
+        if (!element || !icon) return null;
+        const iconBox = toLocal(icon.getBoundingClientRect());
+        return { marker, tooltip, element, icon, iconBox,
+            width: element.offsetWidth, height: element.offsetHeight,
+            point: map.latLngToContainerPoint(marker.getLatLng()) };
+    }).filter(Boolean);
+    const occupied = [];
+    const plans = [];
+    const overlaps = (box, other) => rectangleOverlapArea({
+        left: box.left - 4, right: box.right + 4,
+        top: box.top - 4, bottom: box.bottom + 4
+    }, other) > 0;
+    for (const entry of entries) {
+        const { width, height, iconBox } = entry;
+        const cx = (iconBox.left + iconBox.right) / 2;
+        const cy = (iconBox.top + iconBox.bottom) / 2;
+        let best = null;
+        let bestScore = Infinity;
+        const consider = (left, top) => {
+            left = Math.max(6, Math.min(viewport.x - width - 6, left));
+            top = Math.max(6, Math.min(viewport.y - height - 6, top));
+            const box = { left, top, right: left + width, bottom: top + height };
+            if (overlaps(box, iconBox)) return;
+            const collisions = occupied.filter(other => overlaps(box, other)).length;
+            const iconCollisions = icons.filter(other => overlaps(box, other)).length;
+            const panelCollisions = panels.filter(other => overlaps(box, other)).length;
+            const distance = Math.hypot(left + width / 2 - cx, top + height / 2 - cy);
+            const score = (collisions + panelCollisions) * 1000000 + iconCollisions * 100000 + distance;
+            if (score < bestScore) { bestScore = score; best = box; }
+        };
+        // Nearest four sides first, then free slots across the viewport for dense groups.
+        consider(cx - width / 2, iconBox.top - height - 10);
+        consider(iconBox.right + 10, cy - height / 2);
+        consider(cx - width / 2, iconBox.bottom + 10);
+        consider(iconBox.left - width - 10, cy - height / 2);
+        if (bestScore >= 100000) {
+            for (let y = 6; y <= viewport.y - height - 6; y += Math.max(18, height + 8)) {
+                for (let x = 6; x <= viewport.x - width - 6; x += 32) consider(x, y);
+            }
+        }
+        if (!best) continue;
+        occupied.push(best);
+        plans.push({ ...entry, box: best });
+    }
 
-    tooltip.options.direction = bestCandidate.direction;
-    tooltip.options.offset = L.point(bestCandidate.offset);
-    tooltip.update();
+    if (!compactLabelLines) {
+        compactLabelLines = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        compactLabelLines.classList.add('compact-label-lines');
+        compactLabelLines.setAttribute('aria-hidden', 'true');
+        container.appendChild(compactLabelLines);
+    }
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const fragment = document.createDocumentFragment();
+    for (const { marker, tooltip, element, icon, iconBox, box, point } of plans) {
+        const id = String(L.stamp(marker));
+        element.dataset.sourceMarkerId = id;
+        icon.dataset.labelSourceId = id;
+        tooltip.options.direction = 'top';
+        const anchor = L.point(marker.options.icon?.options.tooltipAnchor || [0, 0]);
+        // Compact labels use zero margins so position and connector share one coordinate space.
+        tooltip.options.offset = L.point(
+            (box.left + box.right) / 2 - point.x - anchor.x,
+            box.bottom - point.y - anchor.y
+        );
+        tooltip.update();
+        L.DomUtil.setPosition(element, map.containerPointToLayerPoint([box.left, box.top]));
+        const cx = (iconBox.left + iconBox.right) / 2;
+        const cy = (iconBox.top + iconBox.bottom) / 2;
+        const sx = Math.max(box.left, Math.min(box.right, cx));
+        const sy = Math.max(box.top, Math.min(box.bottom, cy));
+        const dx = sx - cx, dy = sy - cy;
+        const scale = Math.min(
+            dx ? (iconBox.right - iconBox.left) / 2 / Math.abs(dx) : Infinity,
+            dy ? (iconBox.bottom - iconBox.top) / 2 / Math.abs(dy) : Infinity
+        );
+        const ex = cx + dx * scale, ey = cy + dy * scale;
+        const angle = Math.atan2(ey - sy, ex - sx);
+        const path = document.createElementNS(svgNS, 'path');
+        path.dataset.sourceMarkerId = id;
+        path.setAttribute('d', `M ${sx} ${sy} L ${ex} ${ey} M ${ex - 6 * Math.cos(angle - 0.5)} ${ey - 6 * Math.sin(angle - 0.5)} L ${ex} ${ey} L ${ex - 6 * Math.cos(angle + 0.5)} ${ey - 6 * Math.sin(angle + 0.5)}`);
+        fragment.appendChild(path);
+    }
+    compactLabelLines.replaceChildren(fragment);
+    compactLabelLines.style.visibility = '';
+    container.dataset.compactLabelsLayout = 'ready';
 }
 
 /**
@@ -565,13 +629,18 @@ function getVisibleMarkersInBounds() {
         }
     }
 
-    return markers;
+    return [...new Set(markers)].filter(marker => map.hasLayer(marker) && marker.getElement());
 }
 
 /**
  * 显示紧凑标签
  */
 function showCompactLabels() {
+    cancelAnimationFrame(compactLabelFrame);
+    if (compactLabelMapMoving) {
+        map.getContainer().dataset.compactLabelsLayout = 'pending';
+        return;
+    }
     const markers = getVisibleMarkersInBounds();
     map.getContainer().dataset.compactLabelsLayout = 'pending';
 
@@ -582,6 +651,13 @@ function showCompactLabels() {
 
     // 只处理前 N 个标记
     const markersToShow = markers.slice(0, COMPACT_LABELS_MAX_MARKERS);
+    for (const marker of compactLabelMarkers) {
+        if (!markersToShow.includes(marker)) {
+            marker.unbindTooltip();
+            marker._hasCompactLabel = false;
+            compactLabelMarkers.delete(marker);
+        }
+    }
 
     markersToShow.forEach(marker => {
         const props = marker.feature?.properties || {};
@@ -589,30 +665,29 @@ function showCompactLabels() {
         const placement = getMarkerLabelPlacement(marker);
 
         // 如果已有 tooltip，先解绑
-        if (marker.getTooltip()) {
+        if (marker.getTooltip() && !marker._hasCompactLabel) {
             marker.unbindTooltip();
         }
 
         // 绑定新的紧凑 tooltip
-        marker.bindTooltip(tooltipContent, {
+        if (!marker._hasCompactLabel) marker.bindTooltip(tooltipContent, {
             permanent: true,
             direction: placement.direction,
             className: 'compact-map-label',
             offset: placement.offset,
             interactive: false
         }).openTooltip();
-        avoidMarkerIconOverlap(marker);
+        else if (marker.getTooltip().getContent() !== tooltipContent) marker.setTooltipContent(tooltipContent);
 
         // 标记已添加紧凑标签
         marker._hasCompactLabel = true;
+        compactLabelMarkers.add(marker);
     });
 
     // 等 Leaflet 完成所有图标的 transform 后再做一次全局避让，消除并行加载时序差。
-    requestAnimationFrame(() => {
-        markersToShow.forEach(marker => {
-            if (marker._hasCompactLabel) avoidMarkerIconOverlap(marker);
-        });
-        map.getContainer().dataset.compactLabelsLayout = 'ready';
+    compactLabelFrame = requestAnimationFrame(() => {
+        compactLabelFrame = 0;
+        if (isCompactLabelsVisible) layoutCompactLabels(markersToShow);
     });
 
     console.log(`[CompactLabels] 已显示 ${markersToShow.length} 个标签`);
@@ -622,6 +697,15 @@ function showCompactLabels() {
  * 隐藏所有紧凑标签
  */
 function hideCompactLabels() {
+    cancelAnimationFrame(compactLabelFrame);
+    compactLabelFrame = 0;
+    compactLabelLines?.remove();
+    compactLabelLines = null;
+    compactLabelMarkers.forEach(marker => {
+        marker.unbindTooltip();
+        marker._hasCompactLabel = false;
+    });
+    compactLabelMarkers.clear();
     let count = 0;
     delete map.getContainer().dataset.compactLabelsLayout;
 
@@ -691,9 +775,15 @@ function toggleCompactLabels() {
 window.toggleCompactLabels = toggleCompactLabels;
 
 // 地图视野变化时自动刷新标签（如果模式开启）
-map.on('moveend zoomend', function () {
+map.on('movestart zoomstart', () => {
+    compactLabelMapMoving = true;
+    if (isCompactLabelsVisible) map.getContainer().dataset.compactLabelsLayout = 'pending';
+    cancelAnimationFrame(compactLabelFrame);
+    if (compactLabelLines) compactLabelLines.style.visibility = 'hidden';
+});
+map.on('moveend resize', function () {
+    compactLabelMapMoving = false;
     if (isCompactLabelsVisible) {
-        hideCompactLabels();
         showCompactLabels();
     }
 });
@@ -1956,6 +2046,10 @@ function importGeoJSON(raw) {
 }
 
 function updateLabels() {
+    if (isCompactLabelsVisible) {
+        showCompactLabels();
+        return;
+    }
     drawnItems.eachLayer(layer => {
         if (layer.getTooltip()) layer.unbindTooltip();
         if (showLabels && layer.options.name) {
@@ -1968,7 +2062,6 @@ function updateLabels() {
                 offset: markerPlacement.offset,
                 className: 'layer-label'
             }).openTooltip();
-            if (layer instanceof L.Marker) avoidMarkerIconOverlap(layer);
         }
     });
 }

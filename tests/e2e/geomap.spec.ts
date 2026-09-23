@@ -3,6 +3,90 @@ import { resolve } from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 const example = JSON.parse(await readFile(resolve('examples/decision-demo.geojson'), 'utf8'));
+
+test('dense sixteen-point labels stay separate with arrows and bounded layout work', async ({
+  page
+}) => {
+  // Same spatial density as the reported data, with fictional labels.
+  const coordinates = [
+    [119.171714, 36.741353],
+    [118.51829, 36.686655],
+    [119.157458, 37.029996],
+    [119.079345, 36.753993],
+    [119.380113, 35.980897],
+    [119.153637, 36.740762],
+    [118.840052, 36.677708],
+    [118.528142, 36.497744],
+    [119.196167, 36.406007],
+    [118.494604, 36.726225],
+    [119.413714, 36.009309],
+    [119.77523, 36.356746],
+    [119.11453, 36.718604],
+    [119.214897, 36.490643],
+    [119.160375, 36.643726],
+    [119.765593, 36.396559]
+  ];
+  const data = {
+    type: 'FeatureCollection',
+    features: coordinates.map((coordinates, index) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates },
+      properties: {
+        name: `示例养车精致洗美服务中心（测试门店第 ${index + 1} 站）`,
+        'marker-symbol': 'car'
+      }
+    }))
+  };
+  await page.route(/https:\/\/webrd0[1-4]\.is\.autonavi\.com\/appmaptile.*/, fulfillMapTile);
+  await page.addInitScript((data) => {
+    window.__PRELOADED_DATA__ = data;
+  }, data);
+  await page.goto('/');
+  await expect(page.locator('.custom-marker-icon')).toHaveCount(16, { timeout: 15000 });
+  await page.locator('#decisionModeBtn').click();
+  await expect(page.locator('.custom-marker-icon')).toHaveCount(16);
+  const session = await page.context().newCDPSession(page);
+  await session.send('Performance.enable');
+  const before = await session.send('Performance.getMetrics');
+  await page.locator('#toggleCompactLabelsBtn').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-compact-labels-layout', 'ready');
+  await expect(page.locator('.compact-map-label')).toHaveCount(16);
+  await expect(page.locator('.compact-label-lines path')).toHaveCount(16);
+  const after = await session.send('Performance.getMetrics');
+  const metric = (result: { metrics: { name: string; value: number }[] }, name: string) =>
+    result.metrics.find((item) => item.name === name)?.value ?? 0;
+  const layouts = metric(after, 'LayoutCount') - metric(before, 'LayoutCount');
+  const layoutMs = (metric(after, 'LayoutDuration') - metric(before, 'LayoutDuration')) * 1000;
+  console.log({ layouts, layoutMs });
+  expect(layouts).toBeLessThan(100);
+  const collisions = await page.locator('.compact-map-label').evaluateAll((elements) => {
+    const boxes = elements.map((element) => element.getBoundingClientRect());
+    const panel = document.getElementById('controls')!.getBoundingClientRect();
+    boxes.push(panel);
+    return boxes.reduce(
+      (count, a, index) =>
+        count +
+        boxes
+          .slice(index + 1)
+          .filter(
+            (b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+          ).length,
+      0
+    );
+  });
+  await page.screenshot({ path: `test-results/dense-labels-${page.viewportSize()?.width}.png` });
+  expect(collisions).toBe(0);
+  await page.locator('#toggleCompactLabelsBtn').click();
+  await expect(page.locator('.compact-map-label')).toHaveCount(0);
+  await expect(page.locator('.compact-label-lines')).toHaveCount(0);
+  await page.locator('#toggleCompactLabelsBtn').click();
+  await expect(page.locator('#map')).toHaveAttribute('data-compact-labels-layout', 'ready');
+  await expect(page.locator('.compact-label-lines path')).toHaveCount(16);
+  await page.getByRole('button', { name: '缩小', exact: false }).first().click();
+  await expect(page.locator('.compact-label-lines')).toHaveCSS('visibility', 'visible');
+  await expect(page.locator('.compact-label-lines path')).toHaveCount(16);
+});
+
 const transparentTile = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL4WQAAAABJRU5ErkJggg==',
   'base64'
