@@ -124,5 +124,6 @@ describe('location 360 detail', () => {
       '位置坐标',
       '开业/计划日期'
     ]);
+    expect(buildLocationDetail(workspace, 'incomplete')?.dataCompleteness).toBe(0);
   });
 });

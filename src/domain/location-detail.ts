@@ -148,20 +148,13 @@ export function buildLocationDetail(
   const missingFields = required.filter(([, value]) => !value).map(([label]) => label);
   const selection = selectionDetails(locationId, state.selectionScenarios, state.decisions);
   const metrics = metricDetails(records, state.metricDefinitions);
-  const completenessSignals = [
-    ...required.map(([, value]) => Boolean(value)),
-    metrics.length > 0,
-    records.some((record) => record.recordType !== 'metric'),
-    location.kind !== 'candidate' || selection.length > 0
-  ];
+  const filledFields = required.length - missingFields.length;
   return {
     location,
     metrics,
     timeline: records.filter((record) => record.recordType !== 'metric'),
     selection,
-    dataCompleteness: Math.round(
-      (completenessSignals.filter(Boolean).length / completenessSignals.length) * 100
-    ),
+    dataCompleteness: Math.round((filledFields / required.length) * 100),
     missingFields,
     recordCount: records.length
   };
