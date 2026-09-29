@@ -1,0 +1,107 @@
+.editor-task-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-glass);
+}
+.editor-task-nav button {
+  min-height: 40px;
+  padding: 4px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.editor-task-nav button[aria-selected='true'] {
+  color: var(--text-primary);
+  background: var(--bg-glass-light);
+  border-color: var(--primary-color);
+}
+.editor-task-panel {
+  padding: 0 12px 12px;
+}
+.editor-task-panel[hidden] {
+  display: none !important;
+}
+.editor-task-hint,
+.editor-cleanup p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.editor-task-panel > button {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.editor-task-panel input,
+.editor-task-panel select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.editor-task-panel .coord-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.editor-task-panel .coord-inputs input {
+  width: 100%;
+}
+body.decision-edit-mode .tools-fab-container {
+  bottom: 72px;
+}
+body.decision-edit-mode .tools-fab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+.editor-organized .accordion-header {
+  display: none;
+}
+.editor-organized .accordion-content {
+  display: block !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible;
+  padding: 0;
+}
+.editor-organized .accordion-section {
+  border: 0;
+  margin: 0;
+}
+.editor-organized #accordion-history .accordion-header {
+  display: flex;
+  cursor: default;
+}
+.editor-organized #accordion-history .collapse-icon {
+  display: none;
+}
+.editor-organized #accordion-history .btn-icon {
+  width: auto;
+  min-width: 44px;
+  min-height: 36px;
+  padding: 6px;
+  white-space: nowrap;
+}
+.editor-cleanup {
+  margin-top: 20px;
+  padding: 12px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+}
+.editor-cleanup summary {
+  cursor: pointer;
+  min-height: 32px;
+}
+.editor-task-nav button:focus-visible,
+.editor-cleanup summary:focus-visible,
+#controls .dock-icon:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}

@@ -4948,7 +4948,13 @@ setTimeout(() => {
 }, 500);
 
 // ==== Accordion Toggle Functions ==== //
+window.addEventListener('geomap:editor-task-changed', (event) => {
+    if (event.detail !== 'snapshots' && typeof exitHistoryBrowseModeSafe === 'function') {
+        exitHistoryBrowseModeSafe();
+    }
+});
 function toggleAccordion(sectionId) {
+    window.dispatchEvent(new CustomEvent('geomap:editor-section', { detail: sectionId }));
     const section = document.getElementById(`accordion-${sectionId}`);
     if (section) {
         section.classList.toggle('collapsed');
@@ -4961,6 +4967,7 @@ function toggleAccordion(sectionId) {
 }
 
 function expandAccordion(sectionId) {
+    window.dispatchEvent(new CustomEvent('geomap:editor-section', { detail: sectionId }));
     const controls = document.getElementById('controls');
 
     // 先展开面板

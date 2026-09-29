@@ -111,14 +111,14 @@
                         <label for="searchAddress">搜索地址</label>
                         <div class="input-with-btn">
                             <input type="text" id="searchAddress" placeholder="输入地址关键词..." />
-                            <button id="searchBtn" class="btn-primary"><i class="fa-solid fa-search"></i></button>
+                            <button id="searchBtn" class="btn-primary" aria-label="搜索地址"><i class="fa-solid fa-search"></i></button>
                         </div>
                     </div>
                     <div class="control-group">
                         <label>坐标定位</label>
                         <div class="coord-inputs">
-                            <input type="number" id="gotoLat" placeholder="纬度" step="0.000001" class="mono" />
-                            <input type="number" id="gotoLng" placeholder="经度" step="0.000001" class="mono" />
+                            <input type="number" id="gotoLat" aria-label="纬度" placeholder="纬度" step="0.000001" class="mono" />
+                            <input type="number" id="gotoLng" aria-label="经度" placeholder="经度" step="0.000001" class="mono" />
                         </div>
                         <button id="gotoCoordBtn" class="btn-primary">
                             <i class="fa-solid fa-location-crosshairs"></i> 跳转定位
@@ -146,14 +146,7 @@
                     <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
                 </div>
                 <div class="accordion-content">
-                    <div class="control-group btn-row">
-                        <button id="exportGeoJSONBtn" class="btn-primary">
-                            <i class="fa-solid fa-download"></i> 导出 GeoJSON
-                        </button>
-                        <button id="shareBtn" class="btn-secondary">
-                            <i class="fa-solid fa-share-nodes"></i> 分享
-                        </button>
-                    </div>
+                    <h4>导入位置文件</h4>
                     <div class="control-group">
                         <label for="geojsonFile">导入 GeoJSON</label>
                         <input type="file" id="geojsonFile" accept=".json,.geojson" />
@@ -162,18 +155,25 @@
                         <label for="excelFile">导入 Excel</label>
                         <input type="file" id="excelFile" accept=".xlsx,.xls" />
                     </div>
-                    <div class="control-group btn-row">
-                        <button id="exportExcelBtn" class="btn-secondary">
-                            <i class="fa-solid fa-file-excel"></i> 导出 Excel
-                        </button>
-                        <button id="downloadTemplateBtn" class="btn-text">
-                            <i class="fa-solid fa-download"></i> 模板
-                        </button>
-                    </div>
                     <div class="control-group">
                         <label for="coordFile">导入 CSV</label>
                         <input type="file" id="coordFile" accept=".csv,.txt" />
                     </div>
+                    <button id="downloadTemplateBtn" class="btn-text">
+                        <i class="fa-solid fa-download"></i> 下载 Excel 导入模板
+                    </button>
+                    <h4>导出与分享</h4>
+                    <div class="control-group btn-row">
+                        <button id="exportGeoJSONBtn" class="btn-primary">
+                            <i class="fa-solid fa-download"></i> 导出 GeoJSON
+                        </button>
+                        <button id="exportExcelBtn" class="btn-secondary">
+                            <i class="fa-solid fa-file-excel"></i> 导出 Excel
+                        </button>
+                    </div>
+                    <button id="shareBtn" class="btn-secondary">
+                        <i class="fa-solid fa-share-nodes"></i> 分享地图
+                    </button>
                     <button id="exportBtn" class="btn-secondary">
                         <i class="fa-solid fa-file-csv"></i> 导出 CSV
                     </button>
@@ -194,17 +194,17 @@
 
             <!-- 历史地图（默认折叠） -->
             <div class="accordion-section collapsed" id="accordion-history">
-                <div class="accordion-header" onclick="toggleAccordion('history')">
-                    <h3><i class="fa-solid fa-clock-rotate-left"></i> 历史地图</h3>
+                <div class="accordion-header">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> 地图快照</h3>
                     <div class="accordion-header-actions">
                         <button onclick="event.stopPropagation(); timelineManager && timelineManager.enterBrowseMode()"
-                            title="浏览模式" class="btn-icon">
-                            <i class="fa-solid fa-eye"></i>
+                            title="浏览快照" class="btn-icon">
+                            <i class="fa-solid fa-eye"></i> 浏览
                         </button>
                         <button
                             onclick="event.stopPropagation(); timelineManager && timelineManager.saveSnapshotPrompt()"
                             title="保存快照" class="btn-icon">
-                            <i class="fa-solid fa-plus"></i>
+                            <i class="fa-solid fa-plus"></i> 保存
                         </button>
                         <span class="collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
                     </div>
@@ -259,26 +259,10 @@
                             <option value="grey">灰色标记</option>
                         </select>
                     </div>
-                    <div class="control-group">
-                        <label for="basemapSelect">底图选择</label>
-                        <select id="basemapSelect" onchange="switchBaseLayer(this.value)">
-                            <optgroup label="国际通用">
-                                <option value="osm">OpenStreetMap</option>
-                                <option value="satellite">卫星影像 (Esri)</option>
-                                <option value="dark">暗色主题 (CartoDB)</option>
-                                <option value="light">亮色主题 (CartoDB)</option>
-                                <option value="terrain">地形图 (OpenTopo)</option>
-                            </optgroup>
-                            <optgroup label="中国底图">
-                                <option value="amap" selected>高德地图</option>
-                                <option value="amapSatellite">高德卫星</option>
-                            </optgroup>
-                        </select>
-                    </div>
                     <div class="control-group checkbox-row">
                         <label>
                             <input type="checkbox" id="showLabelsCheck" />
-                            显示标注名称
+                            显示传统名称提示（不避让）
                         </label>
                     </div>
                 </div>
@@ -684,18 +668,19 @@
 
     <!-- 统一工具入口（右下角） -->
     <div class="tools-fab-container">
-        <button id="toolsFabBtn" class="tools-fab" title="工具面板" onclick="toggleToolsMenu()">
+        <button id="toolsFabBtn" class="tools-fab" title="点位数据：表格与统计" aria-label="点位数据：表格与统计" onclick="toggleToolsMenu()">
             <i class="fa-solid fa-toolbox"></i>
+            <span>点位数据</span>
         </button>
         <div id="toolsMenu" class="tools-menu">
             <button class="tools-menu-item" onclick="toggleTableView(); closeToolsMenu()" title="数据表格">
                 <i class="fa-solid fa-table"></i>
-                <span>表格</span>
+                <span>点位表格</span>
             </button>
             <button class="tools-menu-item" onclick="dashboardPanel && dashboardPanel.open(); closeToolsMenu()"
                 title="数据看板">
                 <i class="fa-solid fa-chart-pie"></i>
-                <span>看板</span>
+                <span>点位统计</span>
             </button>
         </div>
     </div>
@@ -703,7 +688,7 @@
     <!-- 看板面板（右上角） -->
     <div id="dashboardPanel" class="dashboard-panel">
         <div class="dashboard-header">
-            <h3><i class="fa-solid fa-chart-pie"></i> 数据看板</h3>
+            <h3><i class="fa-solid fa-chart-pie"></i> 点位统计</h3>
             <button id="closeDashboardBtn" class="btn-close-dashboard" title="关闭">
                 <i class="fa-solid fa-xmark"></i>
             </button>

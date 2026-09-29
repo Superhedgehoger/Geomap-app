@@ -51,7 +51,9 @@ for (const match of [
   const href = match[1].replace(/^\.?\//, '');
   const cssFile = resolve(dist, href);
   const css = await inlineCssUrls(await readFile(cssFile, 'utf8'), cssFile);
-  html = html.replace(match[0], `<style data-source="${href}">\n${css}\n</style>`);
+  // A function replacement is required: vendor sources contain `$&`, `$'` and
+  // similar sequences that String.replace otherwise expands as replacement tokens.
+  html = html.replace(match[0], () => `<style data-source="${href}">\n${css}\n</style>`);
 }
 
 for (const match of [...html.matchAll(/<script\b([^>]*)src=["']([^"']+)["']([^>]*)><\/script>/g)]) {
@@ -60,7 +62,10 @@ for (const match of [...html.matchAll(/<script\b([^>]*)src=["']([^"']+)["']([^>]
   const attributes = `${match[1]} ${match[3]}`;
   const type = /type=["']module["']/.test(attributes) ? ' type="module"' : '';
   const escaped = script.replaceAll('</script>', '<\\/script>');
-  html = html.replace(match[0], `<script${type} data-source="${src}">\n${escaped}\n</script>`);
+  html = html.replace(
+    match[0],
+    () => `<script${type} data-source="${src}">\n${escaped}\n</script>`
+  );
 }
 
 await mkdir(resolve('release'), { recursive: true });

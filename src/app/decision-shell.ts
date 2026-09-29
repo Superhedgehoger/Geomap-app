@@ -4,6 +4,15 @@ import type { LocationEntity, LocationStatus } from '../types';
 type ShellMode = 'view' | 'edit';
 type ShellSection = 'overview' | 'network' | 'history' | 'selection' | 'data' | 'collaboration';
 
+const SECTION_HELP: Record<ShellSection, string> = {
+  overview: '经营总览 · 查看门店规模、经营状态与区域分布',
+  network: '门店网络 · 筛选和定位门店；维护地图请点「编辑地图」',
+  history: '历史复盘 · 录入经营事件、回放历史、比较不同时间',
+  selection: '选址分析 · 配置自定义模型，比较候选位置',
+  data: '经营数据 · 导入营业额等指标；位置文件请在地图工作台导入',
+  collaboration: '团队协作 · 共享工作区、分配经营事项、跟进进展'
+};
+
 const STATUS_LABELS: Record<LocationStatus, string> = {
   planned: '计划',
   preparing: '筹备',
@@ -18,7 +27,7 @@ function button(
   options: { active?: boolean; disabled?: boolean; section?: ShellSection } = {}
 ): string {
   const { active = false, disabled = false, section } = options;
-  return `<button class="decision-nav-item${active ? ' is-active' : ''}" type="button"${section ? ` data-section="${section}"` : ''}${disabled ? ' disabled' : ''}>${label}${disabled ? '<span>即将推出</span>' : ''}</button>`;
+  return `<button class="decision-nav-item${active ? ' is-active' : ''}" type="button"${active ? ' aria-current="page"' : ''}${section ? ` data-section="${section}"` : ''}${disabled ? ' disabled title="当前版本未启用此功能"' : ''}>${label}${disabled ? '<span>未启用</span>' : ''}</button>`;
 }
 
 function formatUpdatedAt(value: string): string {
@@ -138,6 +147,10 @@ export class DecisionShell {
 
   #render(): void {
     if (!this.#root || !this.#insights) return;
+    document.body.classList.toggle(
+      'decision-workspace-section',
+      ['selection', 'data', 'collaboration'].includes(this.#section)
+    );
     const state = this.#store.getState();
     const locations = this.#filteredLocations();
     const sourceLocations = this.#historicalLocations ?? state.locations;
@@ -156,36 +169,40 @@ export class DecisionShell {
       <div class="decision-shell-topline">
         <div class="decision-brand"><i class="fa-solid fa-map-location-dot"></i><span>Geomap</span><strong>经营决策地图</strong></div>
         <nav class="decision-nav" aria-label="主要功能">
-          ${button('总览', { active: this.#section === 'overview', section: 'overview' })}
+          <div class="decision-nav-group" role="group" aria-label="经营分析">
+          ${button('经营总览', { active: this.#section === 'overview', section: 'overview' })}
           ${button('门店网络', { active: this.#section === 'network', section: 'network' })}
-          ${button('经营时间', {
+          ${button('历史复盘', {
             active: this.#section === 'history',
             disabled: !this.#historyEnabled,
             section: this.#historyEnabled ? 'history' : undefined
           })}
-          ${button('选址模型', {
+          ${button('选址分析', {
             active: this.#section === 'selection',
             disabled: !this.#selectionEnabled,
             section: this.#selectionEnabled ? 'selection' : undefined
           })}
-          ${button('数据中心', {
+          </div><div class="decision-nav-group decision-nav-management" role="group" aria-label="数据与团队">
+          ${button('经营数据', {
             active: this.#section === 'data',
             disabled: !this.#dataEnabled,
             section: this.#dataEnabled ? 'data' : undefined
           })}
-          ${button('协作', {
+          ${button('团队协作', {
             active: this.#section === 'collaboration',
             disabled: !this.#collaborationEnabled,
             section: this.#collaborationEnabled ? 'collaboration' : undefined
           })}
+          </div>
         </nav>
         <div class="decision-shell-actions">
           <span class="decision-freshness">${formatUpdatedAt(state.updatedAt)}</span>
-          <button id="decisionModeBtn" class="decision-mode-btn" type="button"><i class="fa-solid fa-arrow-right"></i>开始使用</button>
+          <button id="decisionModeBtn" class="decision-mode-btn" type="button" title="打开地图工作台：导入位置、维护点位、编辑地图"><i class="fa-solid fa-pen-to-square"></i>编辑地图</button>
           <button id="decisionShellHideBtn" class="decision-shell-hide-btn" type="button" aria-label="隐藏顶部菜单" title="隐藏顶部菜单"><i class="fa-solid fa-chevron-up"></i></button>
         </div>
       </div>
-      <div class="decision-shell-dashboard">
+      <div class="decision-section-context">${SECTION_HELP[this.#section]}</div>
+      <div class="decision-shell-dashboard"${['selection', 'data', 'collaboration'].includes(this.#section) ? ' hidden' : ''}>
         <div class="decision-filters">
           <label><span>搜索</span><input id="decisionSearch" value="${this.#escapeAttribute(this.#query)}" placeholder="门店、区域或地址" /></label>
           <label><span>区域</span><select id="decisionRegion"><option value="all">全部区域</option>${allRegions.map((region) => `<option value="${this.#escapeAttribute(region!)}"${region === this.#region ? ' selected' : ''}>${region}</option>`).join('')}</select></label>
@@ -218,7 +235,7 @@ export class DecisionShell {
     this.#insights.innerHTML = `
       <div class="decision-insights-header"><div><span>${this.#section === 'overview' ? '经营总览' : this.#section === 'network' ? '门店网络' : this.#section === 'history' ? '历史状态' : this.#section === 'selection' ? '选址模型' : this.#section === 'collaboration' ? '企业协作' : '经营数据'}</span><strong>${locations.length} 个位置</strong></div><span class="decision-mode-tag">${this.#section === 'history' ? '时间上下文' : this.#section === 'selection' ? '模型情景' : this.#section === 'data' ? '指标口径' : this.#section === 'collaboration' ? '私有空间' : this.#mode === 'view' ? '查看模式' : '编辑模式'}</span><button id="decisionInsightsHideBtn" class="decision-insights-hide-btn" type="button" aria-label="隐藏经营总览" title="隐藏经营总览"><i class="fa-solid fa-chevron-right"></i></button></div>
       <section><h2>区域分布</h2>${regionSummary.length ? regionSummary.map((item) => `<button type="button" data-region="${this.#escapeAttribute(item.region)}"><span>${item.region}</span><strong>${item.count}</strong></button>`).join('') : '<p>暂无区域字段</p>'}</section>
-      <section><h2>数据提示</h2><p>${missingRegion > 0 ? `${missingRegion} 个位置缺少区域，请在数据中心补充。` : '区域字段完整，可用于管理筛选。'}</p><p>${this.#section === 'history' ? '地图与指标已使用底部时间轴的同一历史状态。' : '进入经营时间可回放事件并比较两个时间点。'}</p></section>
+      <section><h2>数据提示</h2><p>${missingRegion > 0 ? `${missingRegion} 个位置缺少区域，请在点位属性中补充。` : '区域字段完整，可用于管理筛选。'}</p><p>${this.#section === 'history' ? '地图与指标已使用底部时间轴的同一历史状态。' : '进入历史复盘可回放事件并比较两个时间点。'}</p></section>
       <section><h2>位置列表</h2><div class="decision-location-list">${
         locations
           .slice(0, 6)
@@ -349,12 +366,10 @@ export class DecisionShell {
   #setMode(mode: ShellMode): void {
     this.#mode = mode;
     sessionStorage.setItem('geomap.shell.mode', this.#mode);
-    if (mode === 'edit') {
-      this.#section = 'network';
-      window.dispatchEvent(
-        new CustomEvent('geomap:section-changed', { detail: { section: 'network' } })
-      );
-    }
+    this.#section = mode === 'edit' ? 'network' : 'overview';
+    window.dispatchEvent(
+      new CustomEvent('geomap:section-changed', { detail: { section: this.#section } })
+    );
     this.#applyMode();
     this.#render();
     window.setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
