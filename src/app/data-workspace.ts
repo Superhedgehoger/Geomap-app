@@ -224,7 +224,14 @@ export class DataWorkspace {
         const location = this.#workspace
           .getState()
           .locations.find((item) => item.locationId === button.dataset.dataLocation);
-        if (location) window.GeomapLegacyBridge?.focusLocation(location.name);
+        if (location) {
+          window.GeomapLegacyBridge?.focusLocation(location.name);
+          window.dispatchEvent(
+            new CustomEvent('geomap:open-location-detail', {
+              detail: { locationId: location.locationId }
+            })
+          );
+        }
       });
     });
     this.#root?.querySelectorAll<HTMLButtonElement>('[data-data-region]').forEach((button) => {
