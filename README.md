@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v4.1.0--beta.4-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v4.1.0--beta.5-blue.svg)](CHANGELOG.md)
 [![CI](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Superhedgehoger/Geomap-app/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -19,6 +19,8 @@ Decision-oriented store-network workspace with private browser storage, map edit
 > 截图仅使用仓库内的虚构数据 [`examples/decision-demo.geojson`](examples/decision-demo.geojson)，不包含真实业务数据。
 
 ## 能做什么 · Highlights
+
+入口按任务分层：顶部用于经营总览、门店网络、历史复盘、选址分析、经营数据和团队协作；点击「编辑地图」进入地图工作台，按「地图 / 点位 / 文件 / 快照 / 设置」维护地图。详见[功能入口与使用路径](updatedocs/NAVIGATION_GUIDE.md)。
 
 | 能力       | 说明                                                        |
 | ---------- | ----------------------------------------------------------- |

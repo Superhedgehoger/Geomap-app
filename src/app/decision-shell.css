@@ -1,5 +1,5 @@
 :root {
-  --decision-shell-height: 126px;
+  --decision-shell-height: 156px;
   --decision-surface: rgba(15, 23, 42, 0.96);
   --decision-surface-soft: rgba(30, 41, 59, 0.94);
   --decision-border: rgba(148, 163, 184, 0.22);
@@ -65,6 +65,40 @@
   justify-content: center;
   gap: 4px;
   min-width: 0;
+}
+
+.decision-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.decision-nav-management {
+  border-left: 1px solid var(--decision-border);
+  padding-left: 6px;
+}
+
+.decision-section-context {
+  padding: 6px 18px;
+  min-height: 30px;
+  box-sizing: border-box;
+  color: var(--decision-muted);
+  font-size: 12px;
+}
+
+.decision-shell-dashboard[hidden] {
+  display: none;
+}
+
+body.decision-workspace-section:not(.decision-shell-collapsed) {
+  --decision-shell-height: 84px;
+}
+
+@media (max-width: 1280px) {
+  .decision-brand strong,
+  .decision-freshness {
+    display: none;
+  }
 }
 
 .decision-nav-item {
@@ -546,7 +580,7 @@ body.collaboration-mode .decision-insights-reveal-btn {
 
 @media (max-width: 1100px) {
   :root {
-    --decision-shell-height: 154px;
+    --decision-shell-height: 184px;
   }
 
   .decision-shell-topline {
@@ -564,7 +598,7 @@ body.collaboration-mode .decision-insights-reveal-btn {
 
   .decision-kpis {
     position: absolute;
-    top: 96px;
+    top: 126px;
     right: 18px;
     left: 18px;
   }
@@ -576,7 +610,7 @@ body.collaboration-mode .decision-insights-reveal-btn {
 
 @media (max-width: 767px) {
   :root {
-    --decision-shell-height: 138px;
+    --decision-shell-height: 168px;
   }
 
   .decision-shell-topline {

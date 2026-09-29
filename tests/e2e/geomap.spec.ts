@@ -109,6 +109,9 @@ function isOnlineMapTile(url: string) {
 }
 
 async function collectPageErrors(page: Page): Promise<string[]> {
+  // Navigation/business regressions must not depend on public tile service availability.
+  // Provider failures remain covered separately by the OSM fallback test.
+  await page.route((url) => isOnlineMapTile(url.href), fulfillMapTile);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
@@ -125,7 +128,7 @@ test('Full opens in decision view and keeps legacy editing available', async ({ 
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-geomap-core', 'v3');
   await expect(page.locator('#decisionShell')).toBeVisible();
-  await expect(page.locator('#decisionModeBtn')).toContainText('开始使用');
+  await expect(page.locator('#decisionModeBtn')).toContainText('编辑地图');
   await expect(page.locator('.decision-kpis article').first().locator('strong')).toHaveText('12');
   await expect(page.locator('.layer-item').first()).toBeAttached({ timeout: 15_000 });
   await expect(page.locator('#controls')).toBeHidden();
@@ -171,11 +174,11 @@ test('Amap is the default and OSM uses its supported host with automatic fallbac
 
   await page.goto('/');
   await expect(page.locator('#baseMapSelect')).toHaveValue('amap');
-  await expect(page.locator('#basemapSelect')).toHaveValue('amap');
+  await expect(page.locator('#basemapSelect')).toHaveCount(0);
   await page.locator('#decisionModeBtn').click();
   await page.locator('#baseMapSelect').selectOption('osm');
 
-  await expect(page.locator('#basemapSelect')).toHaveValue('amap');
+  await expect(page.locator('#basemapSelect')).toHaveCount(0);
   await expect(page.locator('#baseMapSelect')).toHaveValue('amap');
   await expect(page.locator('#_briefMsg')).toContainText('OpenStreetMap 暂时不可用');
   expect(osmRequests.length).toBeGreaterThanOrEqual(3);
@@ -576,8 +579,8 @@ test('Lite disables event tracking through the shared capability contract', asyn
   await page.goto('/?variant=lite');
   await expect(page.locator('html')).toHaveAttribute('data-geomap-variant', 'lite');
   await expect(page.locator('#decisionShell')).toBeVisible();
-  await expect(page.getByRole('button', { name: /经营时间/ })).toBeDisabled();
-  await expect(page.getByRole('button', { name: /选址模型/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /历史复盘/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /选址分析/ })).toBeDisabled();
   await expect(page.locator('[data-feature="event-tracker"]').first()).toBeHidden();
   expect(await page.evaluate(() => window.GeomapCore.config.capabilities.eventTracker)).toBe(false);
   expect(await page.evaluate(() => window.GeomapCore.config.capabilities.siteSelection)).toBe(
@@ -624,13 +627,28 @@ test('standalone build stays usable offline without external application assets'
   await page.goto(`file://${resolve('release/geomap-full.html')}`);
   await expect(page.locator('#map')).toBeVisible();
   expect(await page.evaluate(() => window.GeomapCore.config.variant)).toBe('full');
+  expect(
+    await page.locator('body').evaluate((body) => body.textContent?.includes('B.BAD_DELIMITERS'))
+  ).toBe(false);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+  ).toBe(true);
   await context.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await expect(page.locator('body')).toHaveClass(/is-offline/);
   await expect(page.locator('#map')).toBeVisible();
+  await page.locator('#decisionModeBtn').click();
+  await page.getByRole('tab', { name: '文件', exact: true }).click();
+  await expect(page.locator('#geojsonFile')).toBeVisible();
+  await expect(page.locator('#exportGeoJSONBtn')).toBeVisible();
   await context.setOffline(false);
   await page.goto(`file://${resolve('release/geomap-lite.html')}`);
   await expect(page.locator('#map')).toBeVisible();
   expect(await page.evaluate(() => window.GeomapCore.config.variant)).toBe('lite');
+  if (await page.locator('#decisionModeBtn').isVisible()) {
+    await page.locator('#decisionModeBtn').click();
+  }
+  await page.getByRole('tab', { name: '点位', exact: true }).click();
+  await expect(page.locator('#addManualMarkerBtn')).toBeVisible();
   expect(externalAssets.filter((url) => !isOnlineMapTile(url))).toEqual([]);
 });

@@ -1,5 +1,7 @@
 import { createAppConfig } from './config';
 import { DecisionShell } from './app/decision-shell';
+import { mountEditorNavigation } from './app/editor-navigation';
+import './app/editor-navigation.css';
 import { HistoryWorkspace } from './app/history-workspace';
 import { SelectionWorkspace } from './app/selection-workspace';
 import { DataWorkspace } from './app/data-workspace';
@@ -117,6 +119,7 @@ export function bootstrapApp(): void {
   new SelectionWorkspace(store, selectionStore).mount();
   new DataWorkspace(store, metricStore).mount();
   new CollaborationWorkspace(store, collaborationClient).mount();
+  mountEditorNavigation();
 }
 
 bootstrapApp();

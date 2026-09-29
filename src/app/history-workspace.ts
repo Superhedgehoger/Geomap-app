@@ -187,9 +187,9 @@ export class HistoryWorkspace {
         <label>速度<select id="historySpeed"><option value="0.5"${this.#speed === 0.5 ? ' selected' : ''}>0.5×</option><option value="1"${this.#speed === 1 ? ' selected' : ''}>1×</option><option value="2"${this.#speed === 2 ? ' selected' : ''}>2×</option><option value="4"${this.#speed === 4 ? ' selected' : ''}>4×</option></select></label>
         <label>专题<select id="historySeries"><option value="all"${this.#series === 'all' ? ' selected' : ''}>全部记录</option><option value="store"${this.#series === 'store' ? ' selected' : ''}>门店线</option><option value="region"${this.#series === 'region' ? ' selected' : ''}>区域线</option><option value="project"${this.#series === 'project' ? ' selected' : ''}>项目线</option><option value="strategy"${this.#series === 'strategy' ? ' selected' : ''}>策略线</option></select></label>
         <div class="history-range-wrap"><span>${dateInput(bounds.min)}</span><div class="history-range-track">${marks}<input id="historyRange" type="range" min="${min}" max="${max}" value="${current}" aria-label="历史时间" /></div><span>${dateInput(bounds.max)}</span></div>
-        <button id="historyAddRecord" class="history-primary" type="button"><i class="fa-solid fa-plus"></i>记录</button>
-        <button id="historyBatchMetric" type="button"><i class="fa-solid fa-table-cells"></i>批量指标</button>
-        <button id="historyCompareToggle" type="button"><i class="fa-solid fa-code-compare"></i>A/B</button>
+        <button id="historyAddRecord" class="history-primary" type="button"><i class="fa-solid fa-plus"></i>新增记录</button>
+        <button id="historyBatchMetric" type="button"><i class="fa-solid fa-table-cells"></i>录入指标</button>
+        <button id="historyCompareToggle" type="button"><i class="fa-solid fa-code-compare"></i>时间对比</button>
         <button id="historySaveView" type="button"><i class="fa-solid fa-bookmark"></i>保存复盘</button>
         ${storyViews.length ? `<label>复盘<select id="historySavedView"><option value="">选择视图</option>${storyViews.map((view) => `<option value="${escapeHtml(String(view.viewId))}">${escapeHtml(String(view.name))}</option>`).join('')}</select></label>` : ''}
       </div>
