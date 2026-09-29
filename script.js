@@ -2144,6 +2144,13 @@ function bindMarkerContextMenu(marker) {
         }
         selectedMarker = marker;
 
+        if (document.body.classList.contains('decision-view-mode')) {
+            const props = marker.feature?.properties || {};
+            window.dispatchEvent(new CustomEvent('geomap:open-location-detail', {
+                detail: { locationId: props.locationId || props.storeId || '', name: props.name || props['名称'] || marker.options.name || '' }
+            }));
+        }
+
         if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
             // Ctrl+Click: 打开属性抽屉
             L.DomEvent.stopPropagation(e);

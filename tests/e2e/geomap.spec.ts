@@ -157,6 +157,54 @@ test('Full opens in decision view and keeps legacy editing available', async ({ 
   expect(errors).toEqual([]);
 });
 
+test('store 360 opens from the list, shows business evidence, and returns to history', async ({
+  page
+}) => {
+  const errors = await collectPageErrors(page);
+  await page.addInitScript((data) => {
+    window.__PRELOADED_DATA__ = data;
+  }, example);
+  await page.goto('/');
+  await page.locator('[data-location-id="QD-001"]').click();
+  const detail = page.locator('#locationDetail');
+  await expect(detail).toBeVisible();
+  await expect(detail).toContainText('海岸中心店');
+  await expect(detail.locator('.location-detail-metric').first()).toContainText('营业收入');
+  await expect(detail).toContainText('目标达成');
+  await detail.getByRole('button', { name: '新增记录' }).click();
+  await expect(page.locator('#historyRecordDialog')).toBeVisible();
+  await expect(page.locator('#historyRecordForm [name="entityRef"]')).toHaveValue('QD-001');
+  await page.locator('#historyRecordForm [data-close]').first().click();
+  await page.locator('#historyAt').fill('2023-06-01');
+  await page.locator('#historyAt').dispatchEvent('change');
+  await page.locator('[data-location-id="QD-001"]').click();
+  await expect(detail.locator('.location-detail-header')).toContainText('历史状态');
+  await expect(detail.locator('.location-detail-metric')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(detail).toBeHidden();
+  await page.locator('[data-section="overview"]').click();
+  await page.locator('.custom-marker-icon').first().click({ force: true });
+  await expect(detail).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('store-360.png') });
+  expect(errors).toEqual([]);
+});
+
+test('Lite location 360 keeps business metrics without Full-only record and selection actions', async ({
+  page
+}) => {
+  await page.addInitScript((data) => {
+    window.__PRELOADED_DATA__ = data;
+  }, example);
+  await page.goto('/?variant=lite');
+  await page.locator('[data-location-id="QD-001"]').click();
+  const detail = page.locator('#locationDetail');
+  await expect(detail).toBeVisible();
+  await expect(detail).toContainText('营业收入');
+  await expect(detail.getByRole('button', { name: '新增记录' })).toHaveCount(0);
+  await expect(detail.getByRole('button', { name: '查看历史复盘' })).toHaveCount(0);
+  await expect(detail.getByRole('button', { name: '查看选址分析' })).toHaveCount(0);
+});
+
 test('Amap is the default and OSM uses its supported host with automatic fallback', async ({
   page
 }) => {

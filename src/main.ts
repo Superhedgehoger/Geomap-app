@@ -6,12 +6,14 @@ import { HistoryWorkspace } from './app/history-workspace';
 import { SelectionWorkspace } from './app/selection-workspace';
 import { DataWorkspace } from './app/data-workspace';
 import { CollaborationWorkspace } from './app/collaboration-workspace';
+import { LocationDetailWorkspace } from './app/location-detail-workspace';
 import { CollaborationApiClient } from './collaboration/api-client';
 import './app/decision-shell.css';
 import './app/history-workspace.css';
 import './app/selection-workspace.css';
 import './app/data-workspace.css';
 import './app/collaboration-workspace.css';
+import './app/location-detail-workspace.css';
 import './app/legacy-menu-theme.css';
 import { importGeoJson, exportGeoJson, toSafeSpreadsheetRows } from './io/geojson';
 import { sanitizeHtml, sanitizeUrl, neutralizeSpreadsheetFormula } from './security';
@@ -119,6 +121,11 @@ export function bootstrapApp(): void {
   new SelectionWorkspace(store, selectionStore).mount();
   new DataWorkspace(store, metricStore).mount();
   new CollaborationWorkspace(store, collaborationClient).mount();
+  new LocationDetailWorkspace(
+    store,
+    config.capabilities.eventTracker,
+    config.capabilities.siteSelection
+  ).mount();
   mountEditorNavigation();
 }
 

@@ -124,6 +124,17 @@ export class DecisionShell {
       this.#historicalLocations = detail?.locations ? structuredClone(detail.locations) : null;
       this.#render();
     });
+    window.addEventListener('geomap:navigate-section', (event) => {
+      const section = (event as CustomEvent<{ section?: ShellSection }>).detail?.section;
+      if (
+        !section ||
+        !['overview', 'network', 'history', 'selection', 'data', 'collaboration'].includes(section)
+      )
+        return;
+      this.#section = section;
+      this.#render();
+      window.dispatchEvent(new CustomEvent('geomap:section-changed', { detail: { section } }));
+    });
     window.addEventListener('resize', () => window.dispatchEvent(new Event('geomap:layout')));
     window.setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
   }
@@ -241,7 +252,7 @@ export class DecisionShell {
           .slice(0, 6)
           .map(
             (item) =>
-              `<div class="decision-location-row"><button type="button" data-location="${this.#escapeAttribute(item.name)}"><span><strong>${this.#escapeAttribute(item.name)}</strong><small>${this.#escapeAttribute(item.region ?? '未分区')}</small></span><em data-status="${item.status}">${STATUS_LABELS[item.status]}</em></button>${this.#section === 'history' ? `<button type="button" class="decision-add-record" data-add-record="${this.#escapeAttribute(item.locationId)}" aria-label="为${this.#escapeAttribute(item.name)}新增记录">+记录</button>` : ''}</div>`
+              `<div class="decision-location-row"><button type="button" data-location-id="${this.#escapeAttribute(item.locationId)}" aria-label="查看${this.#escapeAttribute(item.name)}详情"><span><strong>${this.#escapeAttribute(item.name)}</strong><small>${this.#escapeAttribute(item.region ?? '未分区')}</small></span><em data-status="${item.status}">${STATUS_LABELS[item.status]}</em></button>${this.#section === 'history' ? `<button type="button" class="decision-add-record" data-add-record="${this.#escapeAttribute(item.locationId)}" aria-label="为${this.#escapeAttribute(item.name)}新增记录">+记录</button>` : ''}</div>`
           )
           .join('') || '<p>当前筛选无结果</p>'
       }</div></section>`;
@@ -310,9 +321,16 @@ export class DecisionShell {
         this.#render();
       });
     });
-    this.#insights?.querySelectorAll<HTMLButtonElement>('[data-location]').forEach((item) => {
+    this.#insights?.querySelectorAll<HTMLButtonElement>('[data-location-id]').forEach((item) => {
       item.addEventListener('click', () => {
-        window.GeomapLegacyBridge?.focusLocation(item.dataset.location ?? '');
+        const locationId = item.dataset.locationId ?? '';
+        const location = this.#store
+          .getState()
+          .locations.find((value) => value.locationId === locationId);
+        if (location) window.GeomapLegacyBridge?.focusLocation(location.name);
+        window.dispatchEvent(
+          new CustomEvent('geomap:open-location-detail', { detail: { locationId } })
+        );
       });
     });
     this.#insights?.querySelectorAll<HTMLButtonElement>('[data-add-record]').forEach((item) => {
